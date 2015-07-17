@@ -103,3 +103,8 @@ echo user > /sys/class/cxl/card$c/load_image_on_perst
 echo 1 > /sys/class/cxl/card$c/reset
 printf "Sleeping 30 seconds for reset to occur\n"
 sleep 30
+
+# remind afu to use in host application
+printf "\nMake sure to use ${bold}/dev/cxl/afu$c.0d${normal} in your host application;\n\n"
+printf "#define DEVICE /dev/cxl/afu$c.0d\n"
+printf "struct cxl_afu_h *afu = cxl_afu_open_dev ((char*) (DEVICE));\n\n"
