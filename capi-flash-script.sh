@@ -44,7 +44,7 @@ for i in `seq 0 $(($n - 1))`; do
   fi
 done
 
-# print current data on server for comparison
+# print current date on server for comparison
 printf "\n${bold}Current date:${normal}\n$(date)\n\n"
 
 # print table header
@@ -68,11 +68,15 @@ printf "\n"
 # prompt card to flash to
 while true; do
   read -p "Which card do you want to flash? [0-$(($n - 1))] " c
-  c=$((10#$c))
-  if ! [[ "$c" =~ ^[0-9]+$ ]] || (( "$n" <= "$c" )); then
-    echo "${bold}ERROR:${normal} invalid input"
+  if ! [[ $c =~ ^[0-9]+$ ]]; then
+    printf "${bold}ERROR:${normal} Invalid input\n"
   else
-    break
+    c=$((10#$c))
+    if (( "$c" >= "$n" )); then
+      printf "${bold}ERROR:${normal} Wrong card number\n"
+    else
+      break
+    fi
   fi
 done
 
@@ -99,8 +103,8 @@ $pwd/capi-flash-${p[$c]} $1 $c || printf "${bold}ERROR:${normal} Something went 
 # reset card
 printf "Preparing to reset card\n"
 sleep 5
-echo user > /sys/class/cxl/card$c/load_image_on_perst
-echo 1 > /sys/class/cxl/card$c/reset
+printf user > /sys/class/cxl/card$c/load_image_on_perst
+printf 1 > /sys/class/cxl/card$c/reset
 printf "Sleeping 30 seconds for reset to occur\n"
 sleep 30
 
