@@ -27,11 +27,18 @@ if [[ ! -e $1 ]]; then
   exit 1
 fi
 
-# get pwd
-pwd="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # make cxl dir if not present
 mkdir -p /var/cxl/
+
+# mutual exclusion
+if ! mkdir /var/cxl/capi-flash-script.lock 2>/dev/null; then
+  printf "${bold}ERROR:${normal} Another instance of this script is running\n"
+  exit 1
+fi
+trap 'rm -rf "/var/cxl/capi-flash-script.lock"' 0
+
+# get pwd
+pwd="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # get number of cards in system
 n=`ls -d /sys/class/cxl/card* | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w`
@@ -103,10 +110,17 @@ $pwd/capi-flash-${p[$c]} $1 $c || printf "${bold}ERROR:${normal} Something went 
 # reset card
 printf "Preparing to reset card\n"
 sleep 5
+printf "Resetting card\n"
 printf user > /sys/class/cxl/card$c/load_image_on_perst
 printf 1 > /sys/class/cxl/card$c/reset
-printf "Sleeping 30 seconds for reset to occur\n"
-sleep 30
+sleep 5
+while true; do
+  if [[ `ls -d /sys/class/cxl/card* | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w` == "$n" ]]; then
+    break
+  fi
+  sleep 1
+done
+printf "Reset complete\n"
 
 # remind afu to use in host application
 printf "\nMake sure to use ${bold}/dev/cxl/afu$c.0d${normal} in your host application;\n\n"
