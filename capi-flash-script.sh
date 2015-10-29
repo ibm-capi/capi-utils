@@ -60,7 +60,7 @@ printf "${bold}%-7s %-30s %-29s %-20s %s${normal}\n" "#" "Card" "Flashed" "by" "
 # print card information and flash history
 i=0;
 while read d; do
-  p[$i]=`setpci -s ${d:0:12} 40C.W`;
+  p[$i]=$(cat /sys/class/cxl/card$i/psl_revision | xargs printf "%.4X");
   f=$(cat /var/cxl/card$i)
   while IFS='' read -r line || [[ -n $line ]]; do
     if [[ ${line:0:4} == ${p[$i]:0:4} ]]; then
