@@ -60,13 +60,20 @@ printf "${bold}%-7s %-30s %-29s %-20s %s${normal}\n" "#" "Card" "Flashed" "by" "
 # print card information and flash history
 i=0;
 while read d; do
-  p[$i]=$(cat /sys/class/cxl/card$i/psl_revision | xargs printf "%.4X");
+  p[$i]=$(cat /sys/class/cxl/card$i/device/subsystem_device)
+  # check for legacy device
+  if [[ ${p[$i]:0:6} == "0x04af" ]]; then
+    p[$i]=$(cat /sys/class/cxl/card$i/psl_revision | xargs printf "0x%.4X")
+  fi
   f=$(cat /var/cxl/card$i)
   while IFS='' read -r line || [[ -n $line ]]; do
-    if [[ ${line:0:4} == ${p[$i]:0:4} ]]; then
-      printf "%-7s %-30s %-29s %-20s %s\n" "card$i" "${line:5}" "${f:0:29}" "${f:30:20}" "${f:51}"
+    if [[ ${line:0:6} == ${p[$i]:0:6} ]]; then
+      parse_info=($line)
+      board_vendor[$i]=${parse_info[1]}
+      fpga_type[$i]=${parse_info[2]}
+      printf "%-7s %-30s %-29s %-20s %s\n" "card$i" "${line:6}" "${f:0:29}" "${f:30:20}" "${f:51}"
     fi
-  done < "$pwd/psl-revisions"
+  done < "$pwd/psl-devices"
   i=$[$i+1]
 done < <(lspci -d "1014":"477" )
 
@@ -91,17 +98,18 @@ printf "\n"
 
 # check file type
 FILE_EXT=${1##*.}
-#if [[ ${p[$c]:0:4} == "0000" ]]; then
-#  if [[ $FILE_EXT != "rbf" ]]; then
-#    printf "${bold}ERROR: ${normal} Incorrect board type (Altera/Xilinx)\n"
-#    exit 0
-#  fi
-#else
-#  if [[ $FILE_EXT != "bin" ]]; then
-#    printf "${bold}ERROR: ${normal} Incorrect board type (Altera/Xilinx)\n"
-#    exit 0
-#  fi
-#fi
+if [[ ${fpga_type[$c]} == "Altera" ]]; then
+  if [[ $FILE_EXT != "rbf" ]]; then
+    printf "${bold}ERROR: ${normal} Incorrect board type (Altera/Xilinx)\n"
+    exit 0
+  fi
+else
+  if [[ $FILE_EXT != "bin" ]]; then
+    printf "${bold}ERROR: ${normal} Incorrect board type (Altera/Xilinx)\n"
+    exit 0
+  fi
+fi
+
 # prompt to confirm
 while true; do
   read -p "Do you want to continue to flash ${bold}$1${normal} to ${bold}card$c${normal}? [y/n] " yn
@@ -118,7 +126,7 @@ printf "\n"
 printf "%-29s %-20s %s\n" "$(date)" "$(logname)" $1 > /var/cxl/card$c
 
 # flash card with corresponding binary
-$pwd/capi-flash-${p[$c]} $1 $c || printf "${bold}ERROR:${normal} Something went wrong\n"
+$pwd/capi-flash-${board_vendor[$c]} $1 $c || printf "${bold}ERROR:${normal} Something went wrong\n"
 
 # reset card
 printf "Preparing to reset card\n"
