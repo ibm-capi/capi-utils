@@ -72,20 +72,6 @@ done < <(lspci -d "1014":"477" )
 
 printf "\n"
 
-# check file type
-FILE_EXT=${1##*.}
-if [[ ${p[$c]:0:4} == "0000" ]]; then
-  if [[ $FILE_EXT != "rbf" ]]; then
-    printf "${bold}ERROR: ${normal} Incorrect board type (Altera/Xilinx)\n"
-    exit 0
-  fi
-else
-  if [[ $FILE_EXT != "bin" ]]; then
-    printf "${bold}ERROR: ${normal} Incorrect board type (Altera/Xilinx)\n"
-    exit 0
-  fi
-fi
-
 # prompt card to flash to
 while true; do
   read -p "Which card do you want to flash? [0-$(($n - 1))] " c
@@ -103,6 +89,19 @@ done
 
 printf "\n"
 
+# check file type
+FILE_EXT=${1##*.}
+#if [[ ${p[$c]:0:4} == "0000" ]]; then
+#  if [[ $FILE_EXT != "rbf" ]]; then
+#    printf "${bold}ERROR: ${normal} Incorrect board type (Altera/Xilinx)\n"
+#    exit 0
+#  fi
+#else
+#  if [[ $FILE_EXT != "bin" ]]; then
+#    printf "${bold}ERROR: ${normal} Incorrect board type (Altera/Xilinx)\n"
+#    exit 0
+#  fi
+#fi
 # prompt to confirm
 while true; do
   read -p "Do you want to continue to flash ${bold}$1${normal} to ${bold}card$c${normal}? [y/n] " yn
