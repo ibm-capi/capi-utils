@@ -1,5 +1,5 @@
 To improve tracking of contributions to this project we will use a process 
-modeled on the modified DCO 1.1 (“Developer Certificate of Originality”) and 
+modeled on the modified DCO 1.1 ("Developer Certificate of Originality") and 
 use a "sign-off" procedure on patches that are being emailed around or 
 contributed in any other way.
 
@@ -26,8 +26,9 @@ certified (a), (b) or (c) and I have not modified it.
 claims or rights.
 
 (e)	I understand and agree that this project and the contribution are public 
-and that a record of the contribution (including all personal information I submit with it, including my sign-off) is maintained indefinitely and may be redistributed consistent with this project or the open source license(s) involved.
-
+and that a record of the contribution (including all personal information I submit 
+with it, including my sign-off) is maintained indefinitely and may be redistributed 
+consistent with this project or the open source license(s) involved.
 
 At the end of the message explaining your patch, you must include this type of 
 sign-off line:
