@@ -13,3 +13,8 @@ There are three benefits from using this script rather than calling the `capi-fl
 3. This script will take care of the reset required to use the new image.
 
 Please note that the `capi-flash` binaries should be located in the same directory as this script and should be named according to the following naming convention; `capi-flash-XXXX` where `XXXX` is the board vendor as listed in `psl-devices`.
+
+# Acknowledgements
+
+This project was forked from: https://github.com/mbrobbel/capi-flash-script
+
