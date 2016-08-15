@@ -2,7 +2,9 @@
 0x0001 Nallatech Altera
 0x1001 Convey Xilinx
 0x2001 AlphaData7v3 Xilinx
+0x2002 AlphaData7v3 Xilinx
 0x3001 AlphaDataKU60 Xilinx
+0x3003 AlphaDataKU60 Xilinx
 0x0604 AlphaData7v3 Xilinx
 0x0605 AlphaDataKU60 Xilinx
 0x0606 AlphaData Xilinx
