@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # Copyright 2016 International Business Machines
 #
@@ -13,10 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-
-
-#!/bin/bash
 # Usage: sudo capi-flash-script.sh <path-to-bit-file>
 
 # stop on non-zero response
