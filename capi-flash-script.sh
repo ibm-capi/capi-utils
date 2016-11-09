@@ -34,7 +34,7 @@ fi
 # make sure an input argument is provided
 if [ $# -eq 0 ]; then
   printf "${bold}ERROR:${normal} Input argument missing\n"
-  printf "Usage: sudo capi-flash-script.sh <path-to-bit-file>\n"
+  printf "Usage: sudo capi-flash-script <path-to-bit-file>\n"
   exit 1
 fi
 
@@ -90,7 +90,7 @@ while read d; do
       fpga_type[$i]=${parse_info[2]}
       printf "%-7s %-30s %-29s %-20s %s\n" "card$i" "${line:6}" "${f:0:29}" "${f:30:20}" "${f:51}"
     fi
-  done < "$pwd/psl-devices"
+  done < "$pwd/../capi-utils/psl-devices"
   i=$[$i+1]
 done < <(lspci -d "1014":"477" )
 
@@ -143,7 +143,7 @@ printf "\n"
 printf "%-29s %-20s %s\n" "$(date)" "$(logname)" $1 > /var/cxl/card$c
 
 # flash card with corresponding binary
-$pwd/capi-flash-${board_vendor[$c]} $1 $c || printf "${bold}ERROR:${normal} Something went wrong\n"
+$pwd/../capi-utils/capi-flash-${board_vendor[$c]} $1 $c || printf "${bold}ERROR:${normal} Something went wrong\n"
 
 # reset card
 printf "Preparing to reset card\n"

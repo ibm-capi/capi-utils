@@ -12,9 +12,12 @@ all:
 
 install:
 	@chmod a+x capi-flash-*
-	@cp $(install_files) $(prefix)/bin
+	@mkdir -p $(prefix)/capi-utils
+	@cp $(install_files) $(prefix)/capi-utils
+	@ln -s $(prefix)/capi-utils/capi-flash-script.sh \
+		$(prefix)/bin/capi-flash-script
 
 uninstall:
-	@for f in $(install_files); do		\
-		$(RM) $(prefix)/bin/$$f;	\
-	done
+	@rm -rf $(prefix)/capi-utils
+	@rm $(prefix)/bin/capi-flash-script
+

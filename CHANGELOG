@@ -1,3 +1,21 @@
+commit 5ee1bbc8fb05e4b9eec1e8f5eec57df058d8830d
+Author: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Date:   Wed Nov 9 15:12:00 2016 +0100
+
+    Enable core dump generation to get better debug data
+    
+    Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+    Signed-off-by: Kenneth R. Hill <khill@us.ibm.com>
+
+commit 89e24e9c4064c9e375c05382f9a5ac9db1e2c567
+Author: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Date:   Wed Nov 9 11:29:03 2016 +0100
+
+    Adding Makefile with install and uninstall rule
+    
+    Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+    Signed-off-by: Kenneth R. Hill <khill@us.ibm.com>
+
 Initial upload for capi-flash-script
 
 Signed-off-by: Kenneth R. Hill <khill@us.ibm.com>
