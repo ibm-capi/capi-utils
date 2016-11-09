@@ -16,6 +16,8 @@
 #
 # Usage: sudo capi-flash-script.sh <path-to-bit-file>
 
+ulimit -c unlimited
+
 # stop on non-zero response
 set -e
 
