@@ -1,3 +1,12 @@
+commit b77eafaf500f7501bae462d04fffebee719818c9
+Merge: e39e88d 21994e0
+Author: Kenneth R. Hill <khill@us.ibm.com>
+Date:   Wed Nov 9 15:25:14 2016 -0600
+
+    Added source files for flash binaries
+    
+    Signed-off-by: Kenneth R. Hill <khill@us.ibm.com>
+
 commit 2b131df762d2160d633bbb9e86cb806ed1265a7b
 Author: Kenneth R. Hill <khill@us.ibm.com>
 Date:   Wed Nov 9 14:28:35 2016 -0600
