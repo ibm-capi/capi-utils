@@ -44,6 +44,13 @@ if [[ ! -e $1 ]]; then
   exit 1
 fi
 
+# check if CAPI boards exists
+capi_check=`lspci -d "1014":"477" | wc -l`
+if [ $capi_check -eq 0 ]; then
+  printf "${bold}ERROR:${normal} No CAPI devices found\n"
+  exit 1
+fi
+
 # make cxl dir if not present
 mkdir -p /var/cxl/
 
