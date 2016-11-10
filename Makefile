@@ -15,6 +15,7 @@
 #
 
 CC=gcc
+CFLAGS=-Wall -W -g -O2
 
 ARCH:= $(shell uname -p)
 ifneq ($(ARCH),ppc64le)
@@ -31,22 +32,22 @@ install_files = $(TARGETS) capi-flash-script.sh psl-devices
 all: $(TARGETS)
 
 capi-flash-AlphaData7v3: src/capi_flash_ad7v3ku3_user.c
-	$(CC) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@
 
 capi-flash-AlphaDataKU60: src/capi_flash_ad7v3ku3_user.c
-	$(CC) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@
 
 capi-flash-AlphaDataKU115: src/capi_flash_adku115_user.c
-	$(CC) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@
 
 capi-flash-Nallatech: src/capi_flash_nallatech_user.c
-	$(CC) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@
 
 install: $(TARGETS)
 	@chmod a+x capi-flash-*
 	@mkdir -p $(prefix)/capi-utils
 	@cp $(install_files) $(prefix)/capi-utils
-	@ln -s $(prefix)/capi-utils/capi-flash-script.sh \
+	@ln -sf $(prefix)/capi-utils/capi-flash-script.sh \
 		$(prefix)/bin/capi-flash-script
 
 .PHONY: uninstall
