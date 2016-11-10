@@ -47,7 +47,7 @@ install: $(TARGETS)
 	@chmod a+x capi-flash-*
 	@mkdir -p $(prefix)/capi-utils
 	@cp $(install_files) $(prefix)/capi-utils
-	@ln -s $(prefix)/capi-utils/capi-flash-script.sh \
+	@ln -sf $(prefix)/capi-utils/capi-flash-script.sh \
 		$(prefix)/bin/capi-flash-script
 
 .PHONY: uninstall
