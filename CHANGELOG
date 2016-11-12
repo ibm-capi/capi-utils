@@ -1,3 +1,28 @@
+commit 3cb526165beccd7ba7453bc411e8a146c090fc92
+Author: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Date:   Thu Nov 10 09:43:59 2016 +0100
+
+    Force symlink creation to enable doing make install multiple times without uninstall before
+    
+    Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+    Signed-off-by: Kenneth R. Hill <khill@us.ibm.com>
+
+commit d32241a8b638b8a421315a15db97db2f05170dd2
+Author: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Date:   Thu Nov 10 09:00:54 2016 +0100
+
+    Enable more warnings to improve the quality of the code
+    
+    Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+
+commit 5453d7f503fc4e327cdc264107e07aed5a777913
+Author: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Date:   Thu Nov 10 09:00:39 2016 +0100
+
+    Fix warning due to missing include of time.h
+    
+    Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+
 commit b77eafaf500f7501bae462d04fffebee719818c9
 Merge: e39e88d 21994e0
 Author: Kenneth R. Hill <khill@us.ibm.com>
