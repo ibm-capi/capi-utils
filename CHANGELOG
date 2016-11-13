@@ -1,3 +1,11 @@
+commit c665c4a05df9179617bca71f5d55f1d6f356813b
+Author: Kenneth R. Hill <khill@us.ibm.com>
+Date:   Sat Nov 12 18:39:49 2016 -0600
+
+    Removed -W -Wall compilation warnings.
+    
+    Signed-off-by: Kenneth R. Hill <khill@us.ibm.com>
+
 commit 3cb526165beccd7ba7453bc411e8a146c090fc92
 Author: Frank Haverkamp <haver@linux.vnet.ibm.com>
 Date:   Thu Nov 10 09:43:59 2016 +0100
