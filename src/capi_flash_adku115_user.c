@@ -30,10 +30,13 @@
 #include <termios.h>
 #include <endian.h>
 #include <time.h>
+#include <assert.h>
+
+#define CHECK(X) (assert((X) >= 0))
 
 int main (int argc, char *argv[])
 {
-  int priv1,priv2;
+  // int priv1,priv2;
   int dat, dif, edat;
   int CFG;
   int RBF;
@@ -67,14 +70,14 @@ int main (int argc, char *argv[])
 
   int temp,vendor,device, subsys;
   lseek(CFG, 0, SEEK_SET);
-  read(CFG, &temp, 4);
+  CHECK( read(CFG, &temp, 4) );
   vendor = temp & 0xFFFF;
   device = (temp >> 16) & 0xFFFF;  
   //printf("Device ID: %04X\n", device);
   //printf("Vendor ID: %04X\n", vendor);
 
   lseek(CFG, 44, SEEK_SET);
-  read(CFG, &temp, 4);
+  CHECK( read(CFG, &temp, 4) );
   subsys = (temp >> 16) & 0xFFFF;
 
   if ( (vendor != 0x1014) || ( device != 0x0477) || (subsys != 0x0608)) {
@@ -84,7 +87,7 @@ int main (int argc, char *argv[])
   
   int addr_reg, size_reg, cntl_reg, data_reg;
   lseek(CFG, 0x404, SEEK_SET);
-  read(CFG, &temp,4);
+  CHECK( read(CFG, &temp,4) );
   printf("  VSEC Length/VSEC Rev/VSEC ID: 0x%08X\n", temp);
   if ( (temp & 0x08000000) == 0x08000000 ) {
     printf("    Version 0.12\n\n");
@@ -108,14 +111,14 @@ int main (int argc, char *argv[])
 // -------------------------------------------------------------------------------
   temp = 0;
   lseek(CFG, cntl_reg, SEEK_SET);
-  write(CFG,&temp,4);
+  CHECK( write(CFG,&temp,4) );
  
 
 // -------------------------------------------------------------------------------
 // Wait for Flash to be Ready
 // -------------------------------------------------------------------------------
   lseek(CFG, cntl_reg, SEEK_SET);
-  read(CFG,&temp,4);
+  CHECK( read(CFG,&temp,4) );
 
   st = time(NULL);
   lt = st;
@@ -124,7 +127,7 @@ int main (int argc, char *argv[])
 
   while (cp == 1) {
     lseek(CFG, cntl_reg, SEEK_SET);
-    read(CFG,&temp,4);
+    CHECK( read(CFG,&temp,4) );
     if ( (temp & 0x80000000) == 0x80000000 ) {
       cp = 0;
     }
@@ -160,14 +163,14 @@ int main (int argc, char *argv[])
   //# Setup for Program From Flash
   //# -------------------------------------------------------------------------------
   lseek(CFG, addr_reg, SEEK_SET);
-  write(CFG,&address,4);
+  CHECK( write(CFG,&address,4) );
   
   lseek(CFG, size_reg, SEEK_SET);
-  write(CFG,&num_blocks,4);
+  CHECK( write(CFG,&num_blocks,4) );
 
   temp = 0x04000000;
   lseek(CFG, cntl_reg, SEEK_SET);
-  write(CFG,&temp,4);
+  CHECK( write(CFG,&temp,4) );
 
   printf("Erasing Flash\n");
 
@@ -179,7 +182,7 @@ int main (int argc, char *argv[])
 
   while (cp == 1) {
     lseek(CFG, cntl_reg, SEEK_SET);
-    read(CFG,&temp,4);
+    CHECK( read(CFG,&temp,4) );
     if ( ( (temp & 0x00008000) == 0x00000000 ) &&
          ( (temp & 0x00004000) == 0x00004000 ) ){
       cp = 0;
@@ -227,7 +230,7 @@ int main (int argc, char *argv[])
 
       while (cp == 1) {
 	      lseek(CFG, cntl_reg, SEEK_SET);
-	      read(CFG,&temp,4);
+	      CHECK( read(CFG,&temp,4) );
 	      if ( (temp & 0x00001000) == 0x00000000 ) {
 	        cp = 0;
 	      } else {
@@ -249,7 +252,7 @@ int main (int argc, char *argv[])
       // ccw end add
 
       lseek(CFG, data_reg, SEEK_SET);
-      write(CFG,&dat,4);
+      CHECK( write(CFG,&dat,4) );
     
       if (((i+1) % (256)) == 0) {
         printf("Writing Buffer: %d        \r",bc);
@@ -270,7 +273,7 @@ int main (int argc, char *argv[])
 
     while (cp == 1) {
       lseek(CFG, cntl_reg, SEEK_SET);
-      read(CFG,&temp,4);
+      CHECK( read(CFG,&temp,4) );
       if ( (temp & 0x40000000) == 0x40000000 ) { 
 	      cp = 0;
       }
@@ -295,7 +298,7 @@ int main (int argc, char *argv[])
   //# -------------------------------------------------------------------------------
   dat=0;
   lseek(CFG,cntl_reg,SEEK_SET);
-  write(CFG,&dat,4);
+  CHECK( write(CFG,&dat,4) );
 
   //# -------------------------------------------------------------------------------
   //# Wait for Flash to be ready
@@ -306,7 +309,7 @@ int main (int argc, char *argv[])
   if (ec ==0) {
     while (cp == 1) {
       lseek(CFG, cntl_reg, SEEK_SET);
-      read(CFG,&temp,4);
+       CHECK( read(CFG,&temp,4) );
       if ( (temp & 0x80000000) == 0x80000000 ) { 
 	      cp = 0;
       }
@@ -348,7 +351,7 @@ int main (int argc, char *argv[])
       if ((i % 512) == 0) {
         dat = 0;
         lseek(CFG, cntl_reg, SEEK_SET);
-        write(CFG,&dat,4);
+        CHECK( write(CFG,&dat,4) );
 
         //# -------------------------------------------------------------------------------
         //# Wait for Flash to be ready
@@ -358,7 +361,7 @@ int main (int argc, char *argv[])
       
         while (cp == 1) {
           lseek(CFG, cntl_reg, SEEK_SET);
-          read(CFG,&temp,4);
+          CHECK( read(CFG,&temp,4) );
           if ( (temp & 0x80000000) == 0x80000000 ) { 
             cp = 0;
           }
@@ -378,20 +381,20 @@ int main (int argc, char *argv[])
         //# Setup for Reading From Flash
         //# -------------------------------------------------------------------------------
         lseek(CFG, addr_reg, SEEK_SET);
-        write(CFG,&raddress,4);
+        CHECK( write(CFG,&raddress,4) );
         raddress += 0x200;
       
         dat = 0x1FF;
         lseek(CFG, size_reg, SEEK_SET);
-        write(CFG,&dat,4);
+        CHECK( write(CFG,&dat,4) );
       
         dat = 0x08000000;
         lseek(CFG, cntl_reg, SEEK_SET);
-        write(CFG,&dat,4);
+        CHECK( write(CFG,&dat,4) );
       }
 
       lseek(CFG, data_reg, SEEK_SET);
-      read(CFG,&dat,4);
+      CHECK( read(CFG,&dat,4) );
   
       if ((edat != dat) && (print_cnt < 1024)) {
         int ma = raddress + (i % 512) - 0x200;
@@ -430,10 +433,13 @@ int main (int argc, char *argv[])
   //# -------------------------------------------------------------------------------
   dat = 0;
   lseek(CFG, cntl_reg, SEEK_SET);
-  write(CFG,&dat,4);
+  CHECK( write(CFG,&dat,4) );
 
 
   close(RBF);
   close(CFG);
+
+  return 0;
+
 }
 
