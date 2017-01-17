@@ -43,6 +43,7 @@ capi-flash-AlphaDataKU115: src/capi_flash_adku115_user.c
 capi-flash-Nallatech: src/capi_flash_nallatech_user.c
 	$(CC) $(CFLAGS) $< -o $@
 
+.PHONY: install
 install: $(TARGETS)
 	@chmod a+x capi-flash-*
 	@mkdir -p $(prefix)/capi-utils
@@ -53,7 +54,7 @@ install: $(TARGETS)
 .PHONY: uninstall
 uninstall:
 	@rm -rf $(prefix)/capi-utils
-	@rm $(prefix)/bin/capi-flash-script
+	@rm -f $(prefix)/bin/capi-flash-script
 
 .PHONY: clean
 clean:
