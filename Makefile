@@ -13,13 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+ifneq ($(CROSS_COMPILE),)
+CC=$(CROSS_COMPILE)gcc
+endif
 
-CC=gcc
 CFLAGS=-Wall -W -g -O2
 
-ARCH:= $(shell uname -p)
-ifneq ($(ARCH),ppc64le)
-  $(error $(ARCH) does not support CAPI)
+ARCH_SUPPORTED:=$(shell echo -e "\n\#if !(defined(_ARCH_PPC64) && defined(_LITTLE_ENDIAN))"\
+	"\n\#error \"This tool is only supported on ppc64le architecture\""\
+	"\n\#endif" | ($(CC) $(CFLAGS) -E -o /dev/null - 2>&1 || exit 1))
+
+ifneq ($(strip $(ARCH_SUPPORTED)),)
+$(error Target not supported. Currently CAPI utils is only supported on ppc64le)
 endif
 
 prefix=/usr/local
