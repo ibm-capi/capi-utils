@@ -224,6 +224,20 @@ if [ ! -x $pwd/../capi-utils/capi-flash-${board_vendor[$c]} ]; then
   exit 1
 fi
 
+# Reset to card/flash registers to known state (factory) 
+printf "Preparing card for flashing"
+printf factory > /sys/class/cxl/card$c/load_image_on_perst
+printf 1 > /sys/class/cxl/card$c/reset
+sleep 5
+while true; do
+  if [[ `ls -d /sys/class/cxl/card* 2> /dev/null | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w` == "$n" ]]; then
+    break
+  fi
+  printf "."
+  sleep 1
+done
+printf "\n"
+
 # flash card with corresponding binary
 $pwd/../capi-utils/capi-flash-${board_vendor[$c]} $1 $c || printf "${bold}ERROR:${normal} Something went wrong\n"
 
