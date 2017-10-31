@@ -39,6 +39,39 @@ function usage() {
   echo
 }
 
+# Reset a card and control what image gets loaded
+function reset_card() {
+  # eeh_max_freezes: default number of resets allowed per PCI device per
+  # hour. Backup/restore this counter, since if card is rest too often,
+  # it would be fenced away.
+  if [ -f /sys/kernel/debug/powerpc/eeh_max_freezes ]; then
+    eeh_max_freezes=`cat /sys/kernel/debug/powerpc/eeh_max_freezes`
+    echo 100000 > /sys/kernel/debug/powerpc/eeh_max_freezes
+  fi
+
+  [ -n "$3" ] && printf "$3\n" || printf "Preparing to reset card\n"
+  sleep 5
+  printf "Resetting card\n"
+  c=$1
+  printf $2 > /sys/class/cxl/card$c/load_image_on_perst
+  printf 1 > /sys/class/cxl/card$c/reset
+  sleep 5
+  while true; do
+    if [[ `ls -d /sys/class/cxl/card* 2> /dev/null | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w` == "$n" ]]; then
+      break
+    fi
+    printf "."
+    sleep 1
+  done
+  printf "\n"
+
+  printf "Reset complete\n"
+
+  if [ -f /sys/kernel/debug/powerpc/eeh_max_freezes ]; then
+    echo $eeh_max_freezes > /sys/kernel/debug/powerpc/eeh_max_freezes
+  fi
+}
+
 # Parse any options given on the command line
 while getopts ":C:fVh" opt; do
   case ${opt} in
@@ -225,52 +258,13 @@ if [ ! -x $pwd/../capi-utils/capi-flash-${board_vendor[$c]} ]; then
 fi
 
 # Reset to card/flash registers to known state (factory) 
-printf "Preparing card for flashing"
-printf factory > /sys/class/cxl/card$c/load_image_on_perst
-printf 1 > /sys/class/cxl/card$c/reset
-sleep 5
-while true; do
-  if [[ `ls -d /sys/class/cxl/card* 2> /dev/null | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w` == "$n" ]]; then
-    break
-  fi
-  printf "."
-  sleep 1
-done
-printf "\n"
+reset_card $c factory "Preparing card for flashing"
 
 # flash card with corresponding binary
 $pwd/../capi-utils/capi-flash-${board_vendor[$c]} $1 $c || printf "${bold}ERROR:${normal} Something went wrong\n"
 
-# eeh_max_freezes: default number of resets allowed per PCI device per
-# hour. Backup/restore this counter, since if card is rest too often,
-# it would be fenced away.
-if [ -f /sys/kernel/debug/powerpc/eeh_max_freezes ]; then
-  eeh_max_freezes=`cat /sys/kernel/debug/powerpc/eeh_max_freezes`
-  echo 100000 > /sys/kernel/debug/powerpc/eeh_max_freezes
-fi
-
 # reset card
-printf "Preparing to reset card\n"
-sleep 5
-
-printf "Resetting card\n"
-printf user > /sys/class/cxl/card$c/load_image_on_perst
-printf 1 > /sys/class/cxl/card$c/reset
-sleep 5
-while true; do
-  if [[ `ls -d /sys/class/cxl/card* 2> /dev/null | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w` == "$n" ]]; then
-    break
-  fi
-  printf "."
-  sleep 1
-done
-printf "\n"
-
-printf "Reset complete\n"
-
-if [ -f /sys/kernel/debug/powerpc/eeh_max_freezes ]; then
-  echo $eeh_max_freezes > /sys/kernel/debug/powerpc/eeh_max_freezes
-fi
+reset_card $c user
 
 # remind afu to use in host application
 printf "\nMake sure to use ${bold}/dev/cxl/afu$c.0d${normal} in your host application;\n\n"
