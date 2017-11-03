@@ -109,8 +109,8 @@ ulimit -c unlimited
 set -e
 
 # output formatting
-bold=$(tput bold)
-normal=$(tput sgr0)
+( [[ $- == *i* ]] && bold=$(tput bold) ) || bold=""
+( [[ $- == *i* ]] && normal=$(tput sgr0) ) || normal=""
 
 # make sure script runs as root
 if [[ $EUID -ne 0 ]]; then
