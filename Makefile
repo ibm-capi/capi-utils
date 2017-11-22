@@ -29,7 +29,7 @@ endif
 
 prefix=/usr/local
 
-TARGETS=capi-flash-AlphaData7v3 capi-flash-AlphaDataKU60 capi-flash-NallatechKU60 capi-flash-AlphaDataKU115 capi-flash-Nallatech
+TARGETS=capi-flash-AlphaData7v3 capi-flash-AlphaDataKU60 capi-flash-NallatechKU60 capi-flash-AlphaDataKU115 capi-flash-SemptianNSA121B capi-flash-Nallatech
 
 install_files = $(TARGETS) capi-flash-script.sh psl-devices
 
@@ -46,6 +46,9 @@ capi-flash-NallatechKU60: src/capi_flash_ad7v3ku3_user.c
 	$(CC) $(CFLAGS) $< -o $@
 
 capi-flash-AlphaDataKU115: src/capi_flash_adku115_user.c
+	$(CC) $(CFLAGS) $< -o $@
+
+capi-flash-SemptianNSA121B: src/capi_flash_semptian_only.c
 	$(CC) $(CFLAGS) $< -o $@
 
 capi-flash-Nallatech: src/capi_flash_nallatech_user.c

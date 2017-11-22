@@ -24,7 +24,14 @@ There are three benefits from using this script rather than calling the `capi-fl
 
 Please note that the `capi-flash` binaries should be located in the installation directory (/usr/local/capi-utils by default) and should be named according to the following naming convention; `capi-flash-XXXX` where `XXXX` is the board vendor as listed in `psl-devices`.
 
+# capi_reset.sh
+
+Usage: `sudo ./capi_reset.sh -C CARD_ID`
+
+If CARD_ID is not assigned, it will reset all of the cards in the system.
+
 # Acknowledgements
+
 
 This project was forked from: https://github.com/mbrobbel/capi-flash-script
 
