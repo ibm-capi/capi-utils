@@ -26,11 +26,11 @@ Please note that the `capi-flash` binaries should be located in the installation
 
 # capi_reset.sh
 
-Usage: `sudo ./capi_reset.sh -C CARD_ID`
+Usage: `sudo ./capi_reset.sh CARD_ID`
 
 Usually you *don't* need this script. Because the above capi-flash-script.sh already includes this reset step. But if your AFU doesn't exit correctly and leave the FPGA into an unknown state, you can use this script alone to reset FPGA chip, and avoid programming the flash again.
 
-If `CARD_ID` is not assigned, it will reset all of the cards in the system.
+`CARD_ID` is a single digit like 0, 1, 2, 3. Check `/var/cxl/card#` to know which card your are operating at. If `CARD_ID` is not assigned, the script will reset all of the cards in the system.
 
 # Acknowledgements
 
