@@ -147,7 +147,7 @@ int main (int argc, char *argv[])
   off_t fsize;
   struct stat tempstat;
   int num_blocks;
-  address = 0x0000000;  //the only partion.
+  address = 0x0000000;  //the user partion.
   if (stat(rbf_file, &tempstat) != 0) {
     fprintf(stderr, "Cannot determine size of %s: %s\n", rbf_file, strerror(errno));
     exit(-1);
@@ -155,7 +155,7 @@ int main (int argc, char *argv[])
     fsize = tempstat.st_size;
   }
   num_blocks = fsize / (64 * 1024 *4);
-  printf("Programming the Only Partition with %s\n", rbf_file);
+  printf("Programming User Partition with %s\n", rbf_file);
   printf("  Program ->  for Size: %d in blocks (32K Words or 128K Bytes)\n\n",num_blocks);
 
   set = time(NULL);  
