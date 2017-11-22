@@ -48,7 +48,7 @@ capi-flash-NallatechKU60: src/capi_flash_ad7v3ku3_user.c
 capi-flash-AlphaDataKU115: src/capi_flash_adku115_user.c
 	$(CC) $(CFLAGS) $< -o $@
 
-capi-flash-SemptianNSA121B: src/capi_flash_semptian_only.c
+capi-flash-SemptianNSA121B: src/capi_flash_semptian_user.c
 	$(CC) $(CFLAGS) $< -o $@
 
 capi-flash-Nallatech: src/capi_flash_nallatech_user.c
