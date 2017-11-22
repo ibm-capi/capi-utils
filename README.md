@@ -8,9 +8,9 @@ The default install point for capi-utils is `/usr/local`.
 
 Uninstall: `sudo make uninstall`
 
-# capi-flash-script
+# capi-flash-script.sh
 
-Usage: `sudo capi-flash-script <path-to-bit-file>`
+Usage: `sudo capi-flash-script.sh <path-to-bit-file>`
 
 This script can be used to flash a specific card in a system with one or more CAPI cards installed.
 
@@ -28,7 +28,9 @@ Please note that the `capi-flash` binaries should be located in the installation
 
 Usage: `sudo ./capi_reset.sh -C CARD_ID`
 
-If CARD_ID is not assigned, it will reset all of the cards in the system.
+Usually you *don't* need this script. Because the above capi-flash-script.sh already includes this reset step. But if your AFU doesn't exit correctly and leave the FPGA into an unknown state, you can use this script alone to reset FPGA chip, and avoid programming the flash again.
+
+If `CARD_ID` is not assigned, it will reset all of the cards in the system.
 
 # Acknowledgements
 
