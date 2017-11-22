@@ -16,7 +16,10 @@
 #
 # Usage: sudo capi-flash-script.sh <path-to-bit-file>
 
-version=1.0
+# get pwd
+pwd="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source $pwd/../lib/capi-utils/capi-utils-common.sh
+
 force=0
 program=`basename "$0"`
 card=-1
@@ -37,39 +40,6 @@ function usage() {
   echo "can leave your card in a state where a hardware debugger is"
   echo "required to make the card usable again."
   echo
-}
-
-# Reset a card and control what image gets loaded
-function reset_card() {
-  # eeh_max_freezes: default number of resets allowed per PCI device per
-  # hour. Backup/restore this counter, since if card is rest too often,
-  # it would be fenced away.
-  if [ -f /sys/kernel/debug/powerpc/eeh_max_freezes ]; then
-    eeh_max_freezes=`cat /sys/kernel/debug/powerpc/eeh_max_freezes`
-    echo 100000 > /sys/kernel/debug/powerpc/eeh_max_freezes
-  fi
-
-  [ -n "$3" ] && printf "$3\n" || printf "Preparing to reset card\n"
-  sleep 5
-  printf "Resetting card\n"
-  c=$1
-  printf $2 > /sys/class/cxl/card$c/load_image_on_perst
-  printf 1 > /sys/class/cxl/card$c/reset
-  sleep 5
-  while true; do
-    if [[ `ls -d /sys/class/cxl/card* 2> /dev/null | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w` == "$n" ]]; then
-      break
-    fi
-    printf "."
-    sleep 1
-  done
-  printf "\n"
-
-  printf "Reset complete\n"
-
-  if [ -f /sys/kernel/debug/powerpc/eeh_max_freezes ]; then
-    echo $eeh_max_freezes > /sys/kernel/debug/powerpc/eeh_max_freezes
-  fi
 }
 
 # Parse any options given on the command line
@@ -105,19 +75,6 @@ shift $((OPTIND-1))
 
 ulimit -c unlimited
 
-# stop on non-zero response
-set -e
-
-# output formatting
-( [[ $- == *i* ]] && bold=$(tput bold) ) || bold=""
-( [[ $- == *i* ]] && normal=$(tput sgr0) ) || normal=""
-
-# make sure script runs as root
-if [[ $EUID -ne 0 ]]; then
-  printf "${bold}ERROR:${normal} This script must run as root (${EUID})\n"
-  exit 1
-fi
-
 # make sure an input argument is provided
 if [ $# -eq 0 ]; then
   printf "${bold}ERROR:${normal} Input argument missing\n"
@@ -147,9 +104,6 @@ if ! mkdir /var/cxl/capi-flash-script.lock 2>/dev/null; then
   exit 1
 fi
 trap 'rm -rf "/var/cxl/capi-flash-script.lock"' 0
-
-# get pwd
-pwd="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # get number of cards in system
 n=`ls -d /sys/class/cxl/card* | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w`
@@ -261,7 +215,7 @@ fi
 reset_card $c factory "Preparing card for flashing"
 
 # flash card with corresponding binary
-$pwd/../capi-utils/capi-flash-${board_vendor[$c]} $1 $c || printf "${bold}ERROR:${normal} Something went wrong\n"
+$pwd/../lib/capi-utils/capi-flash-${board_vendor[$c]} $1 $c || printf "${bold}ERROR:${normal} Something went wrong\n"
 
 # reset card
 reset_card $c user
