@@ -267,6 +267,8 @@ $pwd/../capi-utils/capi-flash-${board_vendor[$c]} $1 $c || printf "${bold}ERROR:
 reset_card $c user
 
 # remind afu to use in host application
-printf "\nMake sure to use ${bold}/dev/cxl/afu$c.0d${normal} in your host application;\n\n"
-printf "#define DEVICE \"/dev/cxl/afu$c.0d\"\n"
-printf "struct cxl_afu_h *afu = cxl_afu_open_dev ((char*) (DEVICE));\n\n"
+# Y.Lu: This is not needed for SNAP. The DEVICE may not be in dedicated mode. Comment off.
+
+# printf "\nMake sure to use ${bold}/dev/cxl/afu$c.0d${normal} in your host application;\n\n"
+# printf "#define DEVICE \"/dev/cxl/afu$c.0d\"\n"
+# printf "struct cxl_afu_h *afu = cxl_afu_open_dev ((char*) (DEVICE));\n\n"
