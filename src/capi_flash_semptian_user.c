@@ -80,7 +80,7 @@ int main (int argc, char *argv[])
   CHECK( read(CFG, &temp, 4) );
   subsys = (temp >> 16) & 0xFFFF;
 
-  if ( (vendor != 0x1014) || ( device != 0x0477) || (subsys != 0x0607)) {
+  if ( (vendor != 0x1014) || ( device != 0x0477) || ((subsys != 0x0607) && (subsys != 0x0606))) {
 	  printf("Not the correct flashing binary for card\n");
 	  exit(-1);
   }
@@ -147,7 +147,7 @@ int main (int argc, char *argv[])
   off_t fsize;
   struct stat tempstat;
   int num_blocks;
-  address = 0x0000000;  //the user partion.
+  address = 0;  //the user partion.
   if (stat(rbf_file, &tempstat) != 0) {
     fprintf(stderr, "Cannot determine size of %s: %s\n", rbf_file, strerror(errno));
     exit(-1);
