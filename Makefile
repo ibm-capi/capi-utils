@@ -28,10 +28,11 @@ $(error Target not supported. Currently CAPI utils is only supported on ppc64le)
 endif
 
 prefix=/usr/local
+install_point=lib/capi-utils
 
 TARGETS=capi-flash-AlphaData7v3 capi-flash-AlphaDataKU60 capi-flash-NallatechKU60 capi-flash-AlphaDataKU115 capi-flash-SemptianNSA121B capi-flash-Nallatech
 
-install_files = $(TARGETS) capi-flash-script.sh psl-devices
+install_files = $(TARGETS) capi-utils-common.sh capi-flash-script.sh capi-reset.sh psl-devices
 
 .PHONY: all 
 all: $(TARGETS)
@@ -57,15 +58,18 @@ capi-flash-Nallatech: src/capi_flash_nallatech_user.c
 .PHONY: install
 install: $(TARGETS)
 	@chmod a+x capi-flash-*
-	@mkdir -p $(prefix)/capi-utils
-	@cp $(install_files) $(prefix)/capi-utils
-	@ln -sf $(prefix)/capi-utils/capi-flash-script.sh \
+	@mkdir -p $(prefix)/$(install_point)
+	@cp $(install_files) $(prefix)/$(install_point)
+	@ln -sf $(prefix)/$(install_point)/capi-flash-script.sh \
 		$(prefix)/bin/capi-flash-script
+	@ln -sf $(prefix)/$(install_point)/capi-reset.sh \
+		$(prefix)/bin/capi-reset
 
 .PHONY: uninstall
 uninstall:
-	@rm -rf $(prefix)/capi-utils
+	@rm -rf $(prefix)/$(install_point)
 	@rm -f $(prefix)/bin/capi-flash-script
+	@rm -f $(prefix)/bin/capi-reset
 
 .PHONY: clean
 clean:
