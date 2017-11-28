@@ -19,6 +19,11 @@ version=1.0
 
 # Reset a card and control what image gets loaded
 function reset_card() {
+  # Set return status
+  ret_status=0
+  # Timeout for reset
+  reset_timeout=30
+  reset_count=0
   # get number of cards in system
   n=`ls -d /sys/class/cxl/card* | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w`
   # eeh_max_freezes: default number of resets allowed per PCI device per
@@ -39,16 +44,25 @@ function reset_card() {
   while true; do
     if [[ `ls -d /sys/class/cxl/card* 2> /dev/null | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w` == "$n" ]]; then
       break
-    fi
+    fi 
     printf "."
     sleep 1
+    reset_count=$((reset_count + 1))
+    if [[ $reset_count -eq $reset_timeout ]]; then
+      printf "${bold}ERROR:${normal} Reset timeout has occurred\n"
+      ret_status=1
+      break 
+    fi
   done
   printf "\n"
 
-  printf "Reset complete\n"
-
   if [ -f /sys/kernel/debug/powerpc/eeh_max_freezes ]; then
     echo $eeh_max_freezes > /sys/kernel/debug/powerpc/eeh_max_freezes
+  fi
+  if [ $ret_status -ne 0 ]; then
+    exit 1
+  else
+    printf "Reset complete\n"
   fi
 }
 
