@@ -214,7 +214,7 @@ fi
 # Reset to card/flash registers to known state (factory) 
 reset_card $c factory "Preparing card for flashing"
 
-trap 'kill -TERM $PID; reset_card $c factory "Flash failure. Resetting to factory" > /tmp/capi-test.out; rm -rf "/var/cxl/capi-flash-script.lock"' TERM INT
+trap 'kill -TERM $PID; date +"%T %a %b %d %Y" >> $log_file; reset_card $c factory "Flash failure. Resetting to factory" >> $log_file; rm -rf "/var/cxl/capi-flash-script.lock"' TERM INT
 # flash card with corresponding binary
 $pwd/../lib/capi-utils/capi-flash-${board_vendor[$c]} $1 $c &
 # || printf "${bold}ERROR:${normal} Something went wrong\n"

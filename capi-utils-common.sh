@@ -16,6 +16,7 @@
 #
 
 version=1.0
+log_file=/var/log/capi-utils.log
 
 # Reset a card and control what image gets loaded
 function reset_card() {
@@ -35,6 +36,7 @@ function reset_card() {
   fi
 
   [ -n "$3" ] && printf "$3\n" || printf "Preparing to reset card\n"
+  [ -n "$4" ] && reset_timeout=$4
   sleep 5
   printf "Resetting card\n"
   c=$1
