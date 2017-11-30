@@ -218,7 +218,6 @@ reset_card $c factory "Preparing card for flashing"
 trap 'kill -TERM $PID; perst_factory $c' TERM INT
 # flash card with corresponding binary
 $package_root/capi-flash-${board_vendor[$c]} $1 $c &
-# || printf "${bold}ERROR:${normal} Something went wrong\n"
 PID=$!
 wait $PID
 trap - TERM INT
