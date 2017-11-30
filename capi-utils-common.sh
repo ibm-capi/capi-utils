@@ -18,6 +18,25 @@
 version=1.0
 log_file=/var/log/capi-utils.log
 
+# Load factory partition
+function perst_factory() {
+  if [ -f /sys/kernel/debug/powerpc/eeh_max_freezes ]; then
+    eeh_max_freezes=`cat /sys/kernel/debug/powerpc/eeh_max_freezes`
+    echo 100000 > /sys/kernel/debug/powerpc/eeh_max_freezes
+  fi
+
+  c=$1
+  printf "factory" > /sys/class/cxl/card$c/load_image_on_perst
+  printf 1 > /sys/class/cxl/card$c/reset
+
+  if [ -f /sys/kernel/debug/powerpc/eeh_max_freezes ]; then
+    echo $eeh_max_freezes > /sys/kernel/debug/powerpc/eeh_max_freezes
+  fi
+  date +"%T %a %b %d %Y" >> $log_file 
+  echo "Flash failure. Resetting to factory" >> $log_file 
+  rm -rf "/var/cxl/capi-flash-script.lock"
+}
+
 # Reset a card and control what image gets loaded
 function reset_card() {
   # Set return status
