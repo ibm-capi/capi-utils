@@ -15,9 +15,10 @@
 # limitations under the License.
 #
 
-# get pwd
-pwd="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source $pwd/../lib/capi-utils/capi-utils-common.sh
+# get capi-utils root
+[ -h $0 ] && package_root=`ls -l "$0" |sed -e 's|.*-> ||'` || package_root="$0"
+package_root=$(dirname $package_root)
+source $package_root/capi-utils-common.sh
 
 function confirm {
   # prompt to confirm

@@ -16,9 +16,10 @@
 #
 # Usage: sudo capi-flash-script.sh <path-to-bit-file>
 
-# get pwd
-pwd="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source $pwd/../lib/capi-utils/capi-utils-common.sh
+# get capi-utils root
+[ -h $0 ] && package_root=`ls -l "$0" |sed -e 's|.*-> ||'` || package_root="$0"
+package_root=$(dirname $package_root)
+source $package_root/capi-utils-common.sh
 
 force=0
 program=`basename "$0"`
@@ -138,7 +139,7 @@ while read d; do
       fpga_type[$i]=${parse_info[2]}
       printf "%-7s %-30s %-29s %-20s %s\n" "card$i" "${line:6}" "${f:0:29}" "${f:30:20}" "${f:51}"
     fi
-  done < "$pwd/../lib/capi-utils/psl-devices"
+  done < "$package_root/psl-devices"
   i=$[$i+1]
 done < <(lspci -d "1014":"477" )
 
@@ -206,7 +207,7 @@ printf "\n"
 printf "%-29s %-20s %s\n" "$(date)" "$(logname)" $1 > /var/cxl/card$c
 
 # Check if lowlevel flash utility is existing and executable
-if [ ! -x $pwd/../lib/capi-utils/capi-flash-${board_vendor[$c]} ]; then
+if [ ! -x $package_root/capi-flash-${board_vendor[$c]} ]; then
   printf "${bold}ERROR:${normal} Utility capi-flash-${board_vendor[$c]} not found!\n"
   exit 1
 fi
@@ -216,7 +217,7 @@ reset_card $c factory "Preparing card for flashing"
 
 trap 'kill -TERM $PID; perst_factory $c' TERM INT
 # flash card with corresponding binary
-$pwd/../lib/capi-utils/capi-flash-${board_vendor[$c]} $1 $c &
+$package_root/capi-flash-${board_vendor[$c]} $1 $c &
 # || printf "${bold}ERROR:${normal} Something went wrong\n"
 PID=$!
 wait $PID
