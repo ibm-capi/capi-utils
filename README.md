@@ -4,7 +4,7 @@ This package contains useful utilities for CAPI adapters.
 
 Install: `sudo make install`
 
-The default install point for capi-utils is `/usr/local`.
+The default install point for capi-utils is `/usr/local/lib`.
 
 Uninstall: `sudo make uninstall`
 
@@ -22,9 +22,18 @@ There are three benefits from using this script rather than calling the `capi-fl
 
 3. This script will take care of the reset required to use the new image.
 
-Please note that the `capi-flash` binaries should be located in the installation directory (/usr/local/capi-utils by default) and should be named according to the following naming convention; `capi-flash-XXXX` where `XXXX` is the board vendor as listed in `psl-devices`.
+Please note that the `capi-flash` binaries should be located in the installation directory (/usr/local/lib/capi-utils by default) and should be named according to the following naming convention; `capi-flash-XXXX` where `XXXX` is the board vendor as listed in `psl-devices`.
+
+# capi_reset
+
+Usage: `sudo capi-reset <CARD_ID>`
+
+Usually you *don't* need this script. Because the above capi-flash-script already includes this reset step. But if your AFU doesn't exit correctly and leave the FPGA into an unknown state, you can use this script alone to reset FPGA chip, and avoid programming the flash again.
+
+`CARD_ID` is a single digit like 0, 1, 2, 3. Check `/var/cxl/card#` to know which card your are operating at. If `CARD_ID` is not assigned, the script will reset all of the cards in the system.
 
 # Acknowledgements
+
 
 This project was forked from: https://github.com/mbrobbel/capi-flash-script
 
