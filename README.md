@@ -10,7 +10,7 @@ Uninstall: `sudo make uninstall`
 
 # capi-flash-script
 
-Usage: `sudo capi-flash-script <path-to-bit-file>`
+Usage: `sudo capi-flash-script.sh <path-to-bit-file>`
 
 This script can be used to flash a specific card in a system with one or more CAPI cards installed.
 
