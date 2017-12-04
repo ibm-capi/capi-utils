@@ -176,12 +176,12 @@ printf "\n"
 FILE_EXT=${1##*.}
 if [[ ${fpga_type[$c]} == "Altera" ]]; then
   if [[ $FILE_EXT != "rbf" ]]; then
-    printf "${bold}ERROR: ${normal} Wrong file extension: .rbf must be used for boards with Altera FPGA\n"
+    printf "${bold}ERROR:${normal} Wrong file extension: .rbf must be used for boards with Altera FPGA\n"
     exit 0
   fi
 else
   if [[ $FILE_EXT != "bin" ]]; then
-    printf "${bold}ERROR: ${normal} Wrong file extension: .bin must be used for boards with Xilinx FPGA\n"
+    printf "${bold}ERROR:${normal} Wrong file extension: .bin must be used for boards with Xilinx FPGA\n"
     exit 0
   fi
 fi
