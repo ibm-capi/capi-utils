@@ -207,8 +207,8 @@ printf "\n"
 printf "%-29s %-20s %s\n" "$(date)" "$(logname)" $1 > /var/cxl/card$c
 
 # Check if lowlevel flash utility is existing and executable
-if [ ! -x $package_root/capi-flash-${board_vendor[$c]} ]; then
-  printf "${bold}ERROR:${normal} Utility capi-flash-${board_vendor[$c]} not found!\n"
+if [ ! -x $package_root/capi-flash ]; then
+  printf "${bold}ERROR:${normal} Utility capi-flash not found!\n"
   exit 1
 fi
 
@@ -217,7 +217,7 @@ reset_card $c factory "Preparing card for flashing"
 
 trap 'kill -TERM $PID; perst_factory $c' TERM INT
 # flash card with corresponding binary
-$package_root/capi-flash-${board_vendor[$c]} $1 $c &
+$package_root/capi-flash $1 $c &
 PID=$!
 wait $PID
 trap - TERM INT
