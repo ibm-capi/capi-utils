@@ -198,8 +198,6 @@ fi
 if [ -z "$flash_block_size" ]; then
   flash_block_size=${flash_block[$c]}
 fi
-echo "flash-address $flash_address"
-echo "flash block $flash_block_size"
 # Update block size to Bytes
 flash_block_size=$(($flash_block_size * 1024))
 
