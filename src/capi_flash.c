@@ -140,8 +140,8 @@ int main (int argc, char *argv[])
 
   int  print_cnt = 0;
 
-  if (argc < 3) {
-    printf("Usage: capi_flash <fpga_binary_file> <card#>\n\n");
+  if (argc != 5) {
+    printf("Usage: capi_flash <fpga_binary_file> <card#> <flash_address> <flash_block_size>\n\n");
     exit(-1);
   }
   strncpy (fpga_file, argv[1], MAX_STRING_SIZE);
@@ -161,6 +161,8 @@ int main (int argc, char *argv[])
     exit(-1);
   }
 
+  int flash_address = strtol(argv[3], NULL, 16);
+  int flash_block_size = atoi(argv[4]);
   int config_word;
   
   CHECKIO( read_config_word(CFG, PCI_ID, &config_word) ); 
@@ -236,19 +238,12 @@ int main (int argc, char *argv[])
 
   printf("\n");
 
-
-  // TODO remove
-  int ku3_address   = 0x2000000;
-  // KU3 blocksize: 256KB
-  int ku3_blocksize = 4 * 64 * 1024; 
-  //
-
   // Setup flash partition to write to
   off_t fsize;
   struct stat tempstat;
   int num_blocks;
   // Flash word size is 4B words
-  address = ku3_address >> 2;  //user partion.
+  address = flash_address >> 2;  //user partion.
   // Find size of FPGA binary
   if (stat(fpga_file, &tempstat) != 0) {
     fprintf(stderr, "Cannot determine size of %s: %s\n", fpga_file, strerror(errno));
@@ -257,10 +252,10 @@ int main (int argc, char *argv[])
     fsize = tempstat.st_size;
   }
 
-  num_blocks = fsize / ku3_blocksize;
-  printf("Programming User Partition with %s\n", fpga_file);
+  num_blocks = fsize / flash_block_size;
+  printf("Programming User Partition (0x%08X) with %s\n", address, fpga_file);
   printf("  Program ->  for Size: %d in blocks (%dK Words or %dK Bytes)\n\n",num_blocks, 
-      (ku3_blocksize / (4 * 1024)), ku3_blocksize / 1024);
+      (flash_block_size / (4 * 1024)), flash_block_size / 1024);
   set = time(NULL);  
   //# -------------------------------------------------------------------------------
   //# Setup for Program From Flash
