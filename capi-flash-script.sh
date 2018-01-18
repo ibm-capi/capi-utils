@@ -24,6 +24,8 @@ source $package_root/capi-utils-common.sh
 force=0
 program=`basename "$0"`
 card=-1
+flash_address=""
+flash_block_size=""
 
 # Print usage message helper function
 function usage() {
@@ -79,13 +81,14 @@ ulimit -c unlimited
 # make sure an input argument is provided
 if [ $# -eq 0 ]; then
   printf "${bold}ERROR:${normal} Input argument missing\n"
-  printf "Usage: sudo capi-flash-script <path-to-bit-file>\n"
+  usage
   exit 1
 fi
 
 # make sure the input file exists
 if [[ ! -e $1 ]]; then
   printf "${bold}ERROR:${normal} $1 not found\n"
+  usage
   exit 1
 fi
 
@@ -137,7 +140,9 @@ while read d; do
       parse_info=($line)
       board_vendor[$i]=${parse_info[1]}
       fpga_type[$i]=${parse_info[2]}
-      printf "%-7s %-30s %-29s %-20s %s\n" "card$i" "${line:6}" "${f:0:29}" "${f:30:20}" "${f:51}"
+      flash_partition[$i]=${parse_info[3]}
+      flash_block[$i]=${parse_info[4]}
+      printf "%-7s %-30s %-29s %-20s %s\n" "card$i" "${line:6:25}" "${f:0:29}" "${f:30:20}" "${f:51}"
     fi
   done < "$package_root/psl-devices"
   i=$[$i+1]
@@ -186,6 +191,19 @@ else
   fi
 fi
 
+# get flash address and block size
+if [ -z "$flash_address" ]; then
+  flash_address=${flash_partition[$c]}
+fi
+if [ -z "$flash_block_size" ]; then
+  flash_block_size=${flash_block[$c]}
+fi
+echo "flash-address $flash_address"
+echo "flash block $flash_block_size"
+# Update block size to Bytes
+flash_block_size=$(($flash_block_size * 1024))
+
+
 # card is set via parameter since it is positive
 if (($force != 1)); then
   # prompt to confirm
@@ -207,8 +225,8 @@ printf "\n"
 printf "%-29s %-20s %s\n" "$(date)" "$(logname)" $1 > /var/cxl/card$c
 
 # Check if lowlevel flash utility is existing and executable
-if [ ! -x $package_root/capi-flash-${board_vendor[$c]} ]; then
-  printf "${bold}ERROR:${normal} Utility capi-flash-${board_vendor[$c]} not found!\n"
+if [ ! -x $package_root/capi-flash ]; then
+  printf "${bold}ERROR:${normal} Utility capi-flash not found!\n"
   exit 1
 fi
 
@@ -217,7 +235,7 @@ reset_card $c factory "Preparing card for flashing"
 
 trap 'kill -TERM $PID; perst_factory $c' TERM INT
 # flash card with corresponding binary
-$package_root/capi-flash-${board_vendor[$c]} $1 $c &
+$package_root/capi-flash $1 $c $flash_address $flash_block_size &
 PID=$!
 wait $PID
 trap - TERM INT
