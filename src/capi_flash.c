@@ -23,7 +23,8 @@ int flash_reset(int cfg, int cntl_reg)
   return (retVal>0)?0:retVal;
 }
 
-int flash_wait_ready(int cfg, int cntl_reg)
+int flash_wait_op(int cfg, int cntl_reg, int mask, int wait_cond, 
+    unsigned timeout, int error_code)
 {
   int config_word = 0x0; 
 
@@ -31,100 +32,23 @@ int flash_wait_ready(int cfg, int cntl_reg)
 
   st = time(NULL);
   lt = st;
-  int error_code = 0;
 
-  while (!FLASH_CHECK_BIT(config_word, FLASH_READY)) 
+  while (1) 
   {
     read_config_word(cfg, cntl_reg, &config_word);
+    if (FLASH_CHECK_BIT(config_word, mask, wait_cond)) break;
     ct = time(NULL);
     if ((ct - lt) > 5) {
       printf(".");
       lt = ct;
     }
-    if ((ct - st) > 120) {
-      printf ("\nFAILURE --> Flash not ready after 2 min\n");
-      error_code = 1;
+    if ((ct - st) > timeout) {
+      printf ("\nFAILURE --> Flash not ready after %d min\n", timeout/60);
+      return error_code;
       break;
     }
   }
-  return error_code;
-}
-
-int flash_erase_wait(int cfg, int cntl_reg)
-{
-  time_t st, lt, ct;
-  st = lt = time(NULL);
-
-  int config_word = 0;
-  int error_code = 0;
-
-  while (!(((config_word & FLASH_ERASE_STATUS) == 0x0) 
-      && ((config_word & FLASH_PROG_STATUS) == FLASH_PROG_STATUS))) 
-  {
-    read_config_word(cfg, cntl_reg, &config_word);
-    ct = time(NULL);
-    if ((ct - lt) > 1) {
-      printf(".");
-      lt = ct;
-    }
-    if ((ct - st) > 240) {
-      printf ("\nFAILURE --> Erase did not complete after 4 min\n");
-      error_code = 2;
-      break;
-    }
-  }
-  return error_code;
-}
-
-int flash_port_ready(int cfg, int cntl_reg)
-{
-  time_t st, lt, ct;
-  st = time(NULL);
-  lt = st;
-  // Initialize to "busy"
-  int config_word = FLASH_PORT_READY;
-  int error_code = 0;
-
-  while (FLASH_CHECK_BIT(config_word, FLASH_PORT_READY)) {
-    read_config_word(cfg, cntl_reg, &config_word);
-	  ct = time(NULL);
-	  if ((ct - lt) > 5) {
-	    printf(".");
-	    lt = ct;
-	  }
-	  if ((ct - st) > 30) {
-	    printf ("\nFAILURE --> Flash Port not ready after 30 seconds\n");
-	    error_code = 99;
-      break;
-	  }
-  }
-  return error_code;
-}
-
-int flash_wait_program(int cfg, int cntl_reg)
-{
-  int config_word = 0x0;
-  int error_code = 0;
-
-  time_t st, lt, ct;
-
-  st = lt = time(NULL);
-
-  while (!FLASH_CHECK_BIT(config_word, FLASH_OP_DONE)) {
-    read_config_word(cfg, cntl_reg, &config_word);
-    ct = time(NULL);
-    if ((ct - lt) > 5) {
-	    printf(".");
-	    lt = ct;
-    } 
-    if ((ct - st) > 120)
-    { 
-      printf ("\nFAILURE --> Programming did not complete after 2 min\n");
-	    error_code = 4;
-      break;
-    }
-  }
-  return error_code;
+  return 0;
 }
 
 int main (int argc, char *argv[])
@@ -234,7 +158,8 @@ int main (int argc, char *argv[])
 // Wait for Flash to be Ready
 // -------------------------------------------------------------------------------
 
-  CHECK( flash_wait_ready(CFG, cntl_reg) );
+  CHECK( flash_wait_op(CFG, cntl_reg, FLASH_READY, FLASH_READY, 120, 
+        FLASH_READY_TIMEOUT) );
 
   printf("\n");
 
@@ -276,7 +201,8 @@ int main (int argc, char *argv[])
   //# -------------------------------------------------------------------------------
   //# Wait for Flash Erase to complete.
   //# -------------------------------------------------------------------------------
-  CHECK( flash_erase_wait(CFG, cntl_reg) );  
+  CHECK( flash_wait_op(CFG, cntl_reg, FLASH_ERASE_STATUS | FLASH_PROG_STATUS, 
+        FLASH_PROG_STATUS, 240, FLASH_ERASE_TIMEOUT) );  
 
   printf("\n");
 
@@ -300,7 +226,7 @@ int main (int argc, char *argv[])
     // -------------------------------------------------------------------------------
     // Poll for flash port to be ready - offset 0x58 bit 12(LE) = 1 means busy
     // -------------------------------------------------------------------------------
-    CHECK( flash_port_ready(CFG, cntl_reg) );
+    CHECK( flash_wait_op(CFG, cntl_reg, FLASH_PORT_READY, 0x0, 30, FLASH_PORT_TIMEOUT) );
 
     CHECKIO( write_config_word(CFG, data_reg, &dat) );
     
@@ -315,7 +241,8 @@ int main (int argc, char *argv[])
   //# -------------------------------------------------------------------------------
   //# Wait for Flash Program to complete.
   //# -------------------------------------------------------------------------------
-  CHECK( flash_wait_program(CFG, cntl_reg) );  
+  CHECK( flash_wait_op(CFG, cntl_reg, FLASH_OP_DONE, FLASH_OP_DONE, 120, 
+        FLASH_PROG_TIMEOUT) );  
   printf("\n");
 
   ept = time(NULL);
@@ -328,7 +255,8 @@ int main (int argc, char *argv[])
   //# -------------------------------------------------------------------------------
   //# Wait for Flash to be ready
   //# -------------------------------------------------------------------------------
-  CHECK( flash_wait_ready(CFG, cntl_reg) );
+  CHECK( flash_wait_op(CFG, cntl_reg, FLASH_READY, FLASH_READY, 120,
+        FLASH_READY_TIMEOUT) );
   printf("\n");
 
   svt = time(NULL);
@@ -356,7 +284,8 @@ int main (int argc, char *argv[])
       //# -------------------------------------------------------------------------------
       //# Wait for Flash to be ready
       //# -------------------------------------------------------------------------------
-      CHECK( flash_wait_ready(CFG, cntl_reg) );
+      CHECK( flash_wait_op(CFG, cntl_reg, FLASH_READY, FLASH_READY, 120, 
+            FLASH_READY_TIMEOUT) );
 
       //# -------------------------------------------------------------------------------
       //# Setup for Reading From Flash

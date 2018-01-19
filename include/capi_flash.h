@@ -35,8 +35,16 @@
 #include <time.h>
 #include <assert.h>
 
-#define CHECKIO(X) (assert((X) >= 0))
-#define CHECK(X) (assert((X) == 0))
+#define CHECKIO(X) \
+  if ((X)< 0) { \
+    fprintf(stderr, "PCI IO error\n"); \
+    exit ((X)); \
+  }
+#define CHECK(X) \
+  if ((X) != 0) { \
+    fprintf(stderr, "CAPI flash error %d\n", (X)); \
+    exit ((X)); \
+  }
 #define MAX_STRING_SIZE 1024
 #define CXL_SYSFS_PATH "/sys/class/cxl/card"
 #define CXL_CONFIG "/device/config"
@@ -69,7 +77,12 @@
 #define FLASH_READ_STATUS   (1 << 13)
 #define FLASH_PORT_READY    (1 << 12)
 #define FLASH_DATA_OFFSET   0x5C
-#define FLASH_CHECK_BIT(X,Y)  (((X) & (Y)) == (Y)) 
+#define FLASH_CHECK_BIT(X,Y,Z)  (((X) & (Y)) == (Z)) 
+// Flash error codes
+#define FLASH_READY_TIMEOUT 1
+#define FLASH_ERASE_TIMEOUT 2
+#define FLASH_PROG_TIMEOUT  4
+#define FLASH_PORT_TIMEOUT  99
 
 int read_config_word( int cfg, int offset, int *retVal)
 {
