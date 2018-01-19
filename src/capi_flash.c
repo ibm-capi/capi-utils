@@ -241,9 +241,9 @@ int main (int argc, char *argv[])
   // Setup flash partition to write to
   off_t fsize;
   struct stat tempstat;
-  int num_blocks;
+  int num_blocks, flash_block_size_words;
   // Flash word size is 4B words
-  address = flash_address >> 2;  //user partion.
+  address = flash_address >> 2;  
   // Find size of FPGA binary
   if (stat(fpga_file, &tempstat) != 0) {
     fprintf(stderr, "Cannot determine size of %s: %s\n", fpga_file, strerror(errno));
@@ -253,6 +253,8 @@ int main (int argc, char *argv[])
   }
 
   num_blocks = fsize / flash_block_size;
+  // Size of flash block in words. Flash word = 4B
+  flash_block_size_words = flash_block_size / 4;
   printf("Programming User Partition (0x%08X) with %s\n", address, fpga_file);
   printf("  Program ->  for Size: %d in blocks (%dK Words or %dK Bytes)\n\n",num_blocks, 
       (flash_block_size / (4 * 1024)), flash_block_size / 1024);
@@ -288,7 +290,7 @@ int main (int argc, char *argv[])
   int bc = 0;
   int i;
   printf("Writing Block: %d        \r", bc);
-  for(i=0; i<(64*1024*(num_blocks+1)); i++) {
+  for(i=0; i<(flash_block_size_words*(num_blocks+1)); i++) {
     dif = read(FPGA_BIN,&dat,4);
     if (!(dif)) {
       dat = 0xFFFFFFFF;
@@ -341,13 +343,13 @@ int main (int argc, char *argv[])
 
   bc = 0;
   raddress = address;
-  for(i=0; i<(64*1024*(num_blocks+1)); i++) {
+  for(i=0; i<(flash_block_size_words*(num_blocks+1)); i++) {
 
     dif = read(FPGA_BIN,&edat,4);
     if (!(dif)) {
       edat = 0xFFFFFFFF;
     }
-
+    // 512 word read size.
     if ((i % 512) == 0) {
       CHECK( flash_reset(CFG, cntl_reg) );
 
@@ -359,13 +361,15 @@ int main (int argc, char *argv[])
       //# -------------------------------------------------------------------------------
       //# Setup for Reading From Flash
       //# -------------------------------------------------------------------------------
+      // Use read size of 512 words
       CHECKIO( write_config_word(CFG, addr_reg, &raddress) );
+      // Advance to next read address
       raddress += 0x200;
-      
+      // Set read size to 512 words
       dat = 0x1FF;
       CHECKIO( write_config_word(CFG, size_reg, &dat) );
       
-      dat = 0x08000000;
+      dat = FLASH_READ_REQ;
       CHECKIO( write_config_word(CFG, cntl_reg, &dat) );
     }
     // Read data from flash
@@ -377,7 +381,7 @@ int main (int argc, char *argv[])
       print_cnt++;
     }
   
-    if (((i+1) % (64*1024)) == 0) {
+    if (((i+1) % (flash_block_size_words)) == 0) {
       printf("Reading Block: %d        \r", bc);
       bc++;
     }
