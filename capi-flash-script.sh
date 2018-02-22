@@ -24,6 +24,7 @@ source $package_root/capi-utils-common.sh
 force=0
 program=`basename "$0"`
 card=-1
+reset_factory=0
 
 # Print usage message helper function
 function usage() {
@@ -31,6 +32,7 @@ function usage() {
   echo "    [-C <card>] card to flash."
   echo "    [-f] force execution without asking."
   echo "         warning: use with care e.g. for automation."
+  echo "    [-r] Reset adapter to factory before writing to flash."
   echo "    [-V] Print program version (${version})"
   echo "    [-h] Print this help message."
   echo "    <path-to-bit-file>"
@@ -44,13 +46,16 @@ function usage() {
 }
 
 # Parse any options given on the command line
-while getopts ":C:fVh" opt; do
+while getopts ":C:fVhr" opt; do
   case ${opt} in
       C)
       card=$OPTARG
       ;;
       f)
       force=1
+      ;;
+      r)
+      reset_factory=1
       ;;
       V)
       echo "${version}" >&2
@@ -213,7 +218,9 @@ if [ ! -x $package_root/capi-flash-${board_vendor[$c]} ]; then
 fi
 
 # Reset to card/flash registers to known state (factory) 
-reset_card $c factory "Preparing card for flashing"
+if [ "$reset_factory" -eq 1 ]; then
+  reset_card $c factory "Preparing card for flashing"
+fi
 
 trap 'kill -TERM $PID; perst_factory $c' TERM INT
 # flash card with corresponding binary
