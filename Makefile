@@ -17,7 +17,11 @@ ifneq ($(CROSS_COMPILE),)
 CC=$(CROSS_COMPILE)gcc
 endif
 
-CFLAGS=-Wall -W -g -O2
+ifneq ($(prefix),)
+prefix=/usr/local
+endif
+
+CFLAGS=-Wall -W -g -O2 -I./include
 
 ARCH_SUPPORTED:=$(shell echo -e "\n\#if !(defined(_ARCH_PPC64) && defined(_LITTLE_ENDIAN))"\
 	"\n\#error \"This tool is only supported on ppc64le architecture\""\
@@ -27,32 +31,16 @@ ifneq ($(strip $(ARCH_SUPPORTED)),)
 $(error Target not supported. Currently CAPI utils is only supported on ppc64le)
 endif
 
-prefix=/usr/local
 install_point=lib/capi-utils
 
-TARGETS=capi-flash-AlphaData7v3 capi-flash-AlphaDataKU60 capi-flash-NallatechKU60 capi-flash-AlphaDataKU115 capi-flash-SemptianNSA121B capi-flash-Nallatech
+TARGETS=capi-flash
 
 install_files = $(TARGETS) capi-utils-common.sh capi-flash-script.sh capi-reset.sh psl-devices
 
 .PHONY: all 
 all: $(TARGETS)
 
-capi-flash-AlphaData7v3: src/capi_flash_ad7v3ku3_user.c
-	$(CC) $(CFLAGS) $< -o $@
-
-capi-flash-AlphaDataKU60: src/capi_flash_ad7v3ku3_user.c
-	$(CC) $(CFLAGS) $< -o $@
-
-capi-flash-NallatechKU60: src/capi_flash_ad7v3ku3_user.c
-	$(CC) $(CFLAGS) $< -o $@
-
-capi-flash-AlphaDataKU115: src/capi_flash_adku115_user.c
-	$(CC) $(CFLAGS) $< -o $@
-
-capi-flash-SemptianNSA121B: src/capi_flash_semptian_user.c
-	$(CC) $(CFLAGS) $< -o $@
-
-capi-flash-Nallatech: src/capi_flash_nallatech_user.c
+capi-flash: src/capi_flash.c
 	$(CC) $(CFLAGS) $< -o $@
 
 .PHONY: install
