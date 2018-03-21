@@ -9,6 +9,7 @@
 0x0605 AlphaDataKU60 Xilinx       0x2000000 256
 0x0606 SemptianNSA121A Xilinx
 0x0607 SemptianNSA121B Xilinx     0x0 256
-0x0608 AlphaDataKU115 Xilinx      0x0 256
+0x0608 AlphaDataKU115 Xilinx      0x2000000 256
 0x0609 BittwareVU095 Xilinx
 0x060a NallatechKU60 Xilinx       0x2000000 256
+0x04dd NallatechN250SP Xilinx     0x4000000 256
