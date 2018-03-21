@@ -206,9 +206,6 @@ fi
 if [ -z "$flash_block_size" ]; then
   flash_block_size=${flash_block[$c]}
 fi
-# Update block size to Bytes
-flash_block_size=$(($flash_block_size * 1024))
-
 
 # card is set via parameter since it is positive
 if (($force != 1)); then
