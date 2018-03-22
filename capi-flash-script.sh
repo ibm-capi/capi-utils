@@ -240,7 +240,7 @@ fi
 
 trap 'kill -TERM $PID; perst_factory $c' TERM INT
 # flash card with corresponding binary
-$package_root/capi-flash $1 $c $flash_address $flash_block_size &
+$package_root/capi-flash --file $1 --card $c --address $flash_address --blocksize $flash_block_size &
 PID=$!
 wait $PID
 trap - TERM INT

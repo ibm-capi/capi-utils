@@ -14,7 +14,35 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE /* For asprintf */
+#include <stdio.h>
+#include <getopt.h>
+#include <stdbool.h>
+#include <errno.h>
 #include "capi_flash.h"
+
+static const char *version = GIT_VERSION;
+static bool quiet = false;
+static int verbose = 0;
+
+#define dprintf(fmt, ...) do { \
+	if (!quiet) \
+		printf( fmt, ## __VA_ARGS__); \
+	} while (0)
+
+#define eprintf(fmt, ...) do { \
+		fprintf(stderr, "Error: "fmt, ## __VA_ARGS__); \
+	} while (0)
+
+#define vprintf(fmt, ...) do { \
+	if (verbose > 0) \
+		printf( fmt, ## __VA_ARGS__); \
+	} while (0)
+
+#define vprintf1(fmt, ...) do { \
+	if (verbose > 1) \
+		printf( fmt, ## __VA_ARGS__); \
+	} while (0)
 
 static int read_config_word(int cfg, int offset, int *retVal)
 {
@@ -22,7 +50,7 @@ static int read_config_word(int cfg, int offset, int *retVal)
 	int ret = read(cfg, retVal, 4);
 	if (4 == ret)
 		return 0;
-	printf("ERROR read_config_word: 0x%x\n", offset);
+	eprintf("read_config_word: 0x%x\n", offset);
 	return FLASH_ERR_CFG_READ;   /* Error */
 }
 
@@ -34,7 +62,7 @@ static int write_config_word(int cfg, int offset, int data)
 	int ret = write(cfg, &wdata, 4);
 	if (4 == ret)
 		return 0;
-	printf("ERROR write_config_word: 0x%x to Adddress: 0x%x\n", data, offset);
+	eprintf("write_config_word: 0x%x to Adddress: 0x%x\n", data, offset);
 	return FLASH_ERR_CFG_WRITE;   /* Error */
 }
 
@@ -67,7 +95,7 @@ static int flash_wait_op(int cfg, int cntl_reg, int mask, int wait_cond,
 			lt = ct;
 		}
 		if ((ct - st) > timeout) {
-			printf ("\nFAILURE --> Flash not ready after %d min (mask: 0x%x cond: 0x%x)\n",
+			eprintf ("\nFlash not ready after %d min (mask: 0x%x cond: 0x%x)\n",
 					timeout/60, mask, wait_cond);
 			return FLASH_READY_TIMEOUT;
 		}
@@ -83,7 +111,7 @@ static int flash_reset_wait(int cfg, int cntl_reg)
 	// -------------------------------------------------------------------------------
 	rc = flash_reset(cfg, cntl_reg);
 	if (0 != rc) {
-		printf("Flash Reset Error\n");
+		eprintf("Flash Reset\n");
 		return rc;
 	}
 	// -------------------------------------------------------------------------------
@@ -148,7 +176,7 @@ static int search_capi_vsec(int cfg, int *rc_vsec_offset, int *rc_config_word)
 	while (next_ecap != 0x0) {
 		rc = read_config_word(cfg, ecap_offset, &config_word);
 		if (0 != rc) {
-			printf("Can not Read ecap_offset1 @0x%x\n", ecap_offset);
+			eprintf("Can not Read ecap_offset1 @0x%x\n", ecap_offset);
 			return rc;
 		}
 		next_ecap = ECAP_NEXT(config_word);
@@ -156,7 +184,7 @@ static int search_capi_vsec(int cfg, int *rc_vsec_offset, int *rc_config_word)
 				// Read vsec length/revision/ID
 				rc = read_config_word(cfg, ecap_offset + 0x4, &config_word);
 				if (0 != rc) {
-					printf("Can not Read ecap_offset2 @0x%x\n", ecap_offset+4);
+					eprintf("Can not Read ecap_offset2 @0x%x\n", ecap_offset+4);
 					return rc;
 				}
 				if (VSEC_ID(config_word) == CAPI_VSECID) {
@@ -167,7 +195,7 @@ static int search_capi_vsec(int cfg, int *rc_vsec_offset, int *rc_config_word)
 		}
 		ecap_offset = next_ecap;
 	}
-	printf("Unable to find CAPI VSEC\n");
+	eprintf("Unable to find CAPI VSEC\n");
 	return -1;
 }
 
@@ -214,10 +242,25 @@ static int flash_wait_ready(int cfg, int cntl_reg, int cntl_remain)
 		cntl_retry--;
 	}
 	if (0 == cntl_retry) {
-		printf("CNTL Retry timeout after 100 CNTL Reg was 0x%x\n", data);
+		eprintf("CNTL Retry timeout after 100 reties (0x%x)\n", data);
 		return FLASH_READY_TIMEOUT;
 	}
 	return 0;
+}
+
+static void help(const char *prog)
+{
+	printf("Usage: %s [options]\n"
+		"      -h, --help       This help\n"
+		"      -v, --verbose    More Verbose\n"
+		"      -V, --version    Print version\n"
+		"      -q, --quiet      No messages\n"
+		"      -p, --factory    Program Factory (primary) Side (NEW)\n"
+		"      -a, --address    Flash Address (default: 0x%8.8x)\n"
+		"      -b, --blocksize  Flash Block Size (default: %d KB)\n"
+		"      -C, --card       Capi Card number (default: %d)\n"
+		"      -f, --file       File to flash\n\n", prog,
+		DEFAULT_USER_FLASH_ADDRESS, DEFAULT_BLOCK_SIZE, DEFAULT_CAPI_CARD);
 }
 
 int main (int argc, char *argv[])
@@ -233,85 +276,159 @@ int main (int argc, char *argv[])
 
 	int addr_reg, size_reg, cntl_reg, data_reg;
 	cntl_reg = 0;
-
-	char fpga_file[MAX_STRING_SIZE];
-	char cfg_file[MAX_STRING_SIZE];
-
+	char *cfg_file = NULL;
 	int  print_cnt = 0;
 	set = time(NULL);  /* Start Erase Time */
 	eet = ept = spt = svt = evt = set;
 
-	if (argc != 5) {
-		printf("Usage: capi_flash <fpga_binary_file> <card#> <flash_address> <flash_block_size>\n\n");
-		goto __exit;
-	}
-	strncpy (fpga_file, argv[1], MAX_STRING_SIZE);
+	int card_no = DEFAULT_CAPI_CARD;
+	int flash_address = DEFAULT_USER_FLASH_ADDRESS;  // 0x02000000;
+	int flash_block_size = DEFAULT_BLOCK_SIZE;       // 256 KB;
 
+	bool factory = false;
+	const char *fpga_file = NULL;
+	int cmd;
+
+	while (1) {
+		int option_index = 0;
+		static struct option long_options[] = {
+			{ "verbose",   no_argument,       NULL, 'v' },
+			{ "help",      no_argument,       NULL, 'h' },
+			{ "version",   no_argument,       NULL, 'V' },
+			{ "quiet",     no_argument,       NULL, 'q' },
+			{ "card",      required_argument, NULL, 'C' },
+			{ "address",   required_argument, NULL, 'a' },
+			{ "blocksize", required_argument, NULL, 'b' },
+			{ "file",      required_argument, NULL, 'f' },
+			{ "factory",   required_argument, NULL, 'p' },
+			{ 0,           no_argument,       NULL, 0   },
+		};
+		cmd = getopt_long(argc, argv, "vhVqpC:a:b:f:",
+				long_options, &option_index);
+		if (-1 == cmd) break;   /* all params processed ? */ 
+		switch (cmd) {
+		case 'v':
+			verbose++;
+			break;
+		case 'V':
+			printf("Version : %s\n", version);
+			exit(0);
+			break;
+		case 'h':
+			help(argv[0]);
+			exit(0);
+			break;
+		case 'q':
+			quiet = true;
+			break;
+		case 'C':
+			card_no = strtol(optarg, (char **)NULL, 0);
+			break;
+		case 'a':
+			flash_address = strtol(optarg, (char **)NULL, 0);
+			break;
+		case 'b':
+			flash_block_size = strtol(optarg, (char **)NULL, 0);
+			break;
+		case 'f':
+			fpga_file = optarg;
+			break;
+		case 'p':  /* factory */
+			factory = true;
+			break;
+		default:
+			eprintf("%s Invalid Option\n", argv[0]);
+			help(argv[0]);
+			exit(0);
+		}
+	}
+
+	if (NULL == fpga_file) {
+		eprintf("%s Missing Option -f -a -b and -C must be set\n", argv[0]);
+		help(argv[0]);
+		rc = EINVAL;
+		goto __exit0;
+	}
+	/* Set Address to 0 in case factory flag is set */
+	if (factory)
+		flash_address = 0;
 	if ((FPGA_BIN = open(fpga_file, O_RDONLY)) < 0) {
-		printf("Can not open %s\n",fpga_file);
-		goto __exit;
+		perror("Error");
+		eprintf("Can not open %s\n", fpga_file);
+		rc = ENOENT;
+		goto __exit0;
 	}
 
-	strcpy(cfg_file, CXL_SYSFS_PATH);
-	// CXL card # should not be larger then 2 characters (ie < 100)
-	strncat(cfg_file, argv[2], 2);
-	strcat(cfg_file, CXL_CONFIG);
-
+	if (asprintf(&cfg_file, CXL_SYSFS_PATH"%d"CXL_CONFIG, card_no) == -1) {
+		perror("Error");
+		eprintf("Can not Create: "CXL_SYSFS_PATH);
+		rc = ENOMEM;
+		goto __exit0;
+	}
 	if ((CFG = open(cfg_file, O_RDWR)) < 0) {
-		printf("Can not open %s\n",cfg_file);
-		goto __exit;
+		perror("Error");
+		eprintf("Can not open %s\n", cfg_file);
+		rc = EACCES;
+		goto __exit0;
 	}
 
-	int flash_address = strtol(argv[3], NULL, 16);
-	int flash_block_size = atoi(argv[4]);
 	int config_word = 0;
+	int sub_dev = 0;
 	int vsec_offset = 0;
 
-	printf("File:    %s\n", fpga_file);
-	printf("Card:    %s\n", cfg_file);
-	printf("Address: %x\n", flash_address);
-	printf("Block:   %d\n", flash_block_size);
+	vprintf1("CAPI CFG Dir     : %s\n", cfg_file);
+	vprintf1("File to Flash    : %s\n", fpga_file);
+	vprintf1("Flash Address    : 0x%x\n", flash_address);
+	vprintf1("Flash Block Size : %d (*1024 Bytes)\n", flash_block_size);
+	vprintf1("Quiet Flag       : %d\n", quiet);
+	vprintf1("Verbose Flag     : %d\n", quiet);
+	vprintf1("Factory Flag     : %d\n", factory);
 
 	if (read_config_word(CFG, PCI_ID, &config_word))
+		goto __exit;
+	if (read_config_word(CFG, 0x2C, &sub_dev))
 		goto __exit;
 
 	int vendor = PCI_VENDORID(config_word);
 	int device = PCI_DEVICEID(config_word);
-	printf("Device ID: %04X\n", device);
-	printf("Vendor ID: %04X\n", vendor);
+
+	vprintf("Vendor ID: %04X\n", vendor);
+	vprintf("  Device / Sub Device ID: %04X / %04X\n",
+			device, PCI_DEVICEID(sub_dev));
 	// Check for known CAPI device
 	if ( (vendor != IBM_PCIID) || (( device != CAPI_PCIID) && (device != CAPI_LEGACY0) && (device != CAPI_LEGACY1))) {
-		printf("Unknown Vendor (0x%x) or Device ID (0x%x)\n", vendor, device);
+		eprintf("Unknown Vendor (0x%x) or Device ID (0x%x)\n", vendor, device);
 		goto __exit;
 	}
 
 	if (0 != search_capi_vsec(CFG, &vsec_offset, &config_word))
 		goto __exit;
-	printf("VSEC Offset: 0x%03X\n", vsec_offset);
+	vprintf1("VSEC Offset: 0x%03X\n", vsec_offset);
 	// Get VSEC size and revision
 	int vsec_rev = VSEC_REV(config_word);
 	int vsec_size = VSEC_LENGTH(config_word);
-	printf("VSEC Length: 0x%03X\nVSEC ID: 0x%1X\n", vsec_size, vsec_rev);
+
+	vprintf1("VSEC Length: 0x%03X\nVSEC ID: 0x%1X\n", vsec_size, vsec_rev);
 	// Set address for flash registers
 	if (vsec_size == 0x80) {
-		printf("    Version 0.12\n\n");
+		vprintf("    Version 0.12\n");
 		addr_reg = vsec_offset + FLASH_ADDR_OFFSET;
 		size_reg = vsec_offset + FLASH_SIZE_OFFSET;
 		cntl_reg = vsec_offset + FLASH_CNTL_OFFSET;
 		data_reg = vsec_offset + FLASH_DATA_OFFSET;
 	} else {
 		// Hard code register values for legacy devices
-		printf("    Version 0.10\n\n");
+		vprintf("    Version 0.10\n");
 		addr_reg = 0x920;
 		size_reg = 0x924;
 		cntl_reg = 0x928;
 		data_reg = 0x92c;
 	}
-	printf("Addr reg: 0x%03X\nSize reg: 0x%03X\nCntl reg: 0x%03X\n"
+	vprintf1("Addr reg: 0x%03X\nSize reg: 0x%03X\nCntl reg: 0x%03X\n"
 		"Data reg: 0x%03X\n", addr_reg, size_reg, cntl_reg, data_reg); 
+
 	// Set stdout to autoflush
 	setvbuf(stdout, NULL, _IONBF, 0);
-	printf("\n");
 
 	off_t fsize;
 	struct stat tempstat;
@@ -320,24 +437,25 @@ int main (int argc, char *argv[])
 	address = flash_address >> 2;
 	// Find size of FPGA binary
 	if (stat(fpga_file, &tempstat) != 0) {
-		fprintf(stderr, "Cannot determine size of %s: %s\n", fpga_file, strerror(errno));
+		perror("Error");
+		eprintf("Cannot determine size of %s\n", fpga_file);
 		goto __exit;
 	}
 	fsize = tempstat.st_size;
 
-	num_blocks = fsize / flash_block_size;
+	num_blocks = fsize / (flash_block_size * 1024);
 	// Size of flash block in words. Flash word = 4B
-	flash_block_size_words = flash_block_size / 4;
-	printf("Programming User Partition (@ 0x%08X) with %ld Bytes from File: %s\n",
+	flash_block_size_words = flash_block_size * 1024 / 4;
+	dprintf("Programming User Partition (@ 0x%08X) with %ld Bytes from File: %s\n",
 			address, fsize, fpga_file);
-	printf("  Program -> for Size: %d in blocks (%dK Words or %dK Bytes)\n\n",num_blocks,
-		(flash_block_size / (4 * 1024)), flash_block_size / 1024);
+	dprintf("  Program -> for Size: %d in blocks (%dK Words or %dK Bytes)\n\n",num_blocks,
+		flash_block_size/4 , flash_block_size);
 
-	printf("Reset Flash\n");
+	dprintf("Reset Flash\n");
 	if (0 != flash_reset_wait(CFG, cntl_reg))
 		goto __exit;
 
-	printf("Erasing Flash\n");
+	dprintf("Erasing Flash\n");
 	rc = flash_erase(CFG, addr_reg, size_reg, cntl_reg,
 			address, num_blocks);
 	eet = time(NULL);  /* End Erase Time */
@@ -346,14 +464,15 @@ int main (int argc, char *argv[])
 		goto __exit;
 	/* Number of Write Words (each does have 4 Bytes)  */
 	flash_words = flash_block_size_words * (num_blocks + 1);
+
 	//# -------------------------------------------------------------------------------
 	//# Program Flash
 	//# -------------------------------------------------------------------------------
-	printf("\n\nProgramming Flash\n");
+	dprintf("\n\nProgramming Flash\n");
 
 	int bc = 0;
 	int i;
-	printf("Writing Block:");
+	dprintf("Writing Block:");
 
 	for (i = 0; i < flash_words; i++) {
 		dif = read(FPGA_BIN, &dat, 4);
@@ -365,7 +484,7 @@ int main (int argc, char *argv[])
 		if (0 != rc)
 			goto __exit;
 		if (((i+1) % (flash_block_size_words)) == 0) {
-			printf(" %d",bc);
+			dprintf(" %d",bc);
 			bc++;
 		}
 	}
@@ -386,19 +505,19 @@ int main (int argc, char *argv[])
 	evt =  time(NULL);
 	if (0 != rc)
 		goto __exit;
-	printf("\n");
+	dprintf("\n");
 
 	//# -------------------------------------------------------------------------------
 	//# Verify Flash Programmming
 	//# -------------------------------------------------------------------------------
-	printf("Verifying Flash\n");
+	dprintf("Verifying Flash\n");
 
 	lseek(FPGA_BIN, 0, SEEK_SET);   // Reset to beginning of file
 	svt = time(NULL);               // Get Start Verify Time
 	bc = 0;
 	raddress = address;
 
-	printf("Reading Block:");
+	dprintf("Reading Block:");
 	for( i = 0; i < flash_words; i++) {
 		evt = time(NULL);
 		dif = read(FPGA_BIN,&edat,4);
@@ -425,7 +544,7 @@ int main (int argc, char *argv[])
 
 		if ((edat != dat) && (print_cnt < 1024)) {
 			int ma = raddress + (i % 512) - 0x200;
-			printf("Data Miscompare @: %08x --> %08x expected %08x\n",ma, dat, edat);
+			eprintf("Data Miscompare @: %08x --> %08x expected %08x\n",ma, dat, edat);
 			print_cnt++;
 		}
 
@@ -437,17 +556,18 @@ int main (int argc, char *argv[])
 	rc = 0;            /* Good */
 
 __exit:
-	printf("\n");
+	dprintf("\n");
 	evt = time(NULL);  /* Get End of Verifaction time */
 	//# -------------------------------------------------------------------------------
 	//# Calculate and Print Elapsed Times
 	//# -------------------------------------------------------------------------------
-	printf("Erase Time:   %d seconds\n", (int)(eet - set));
-	printf("Program Time: %d seconds\n", (int)(ept - spt));
-	printf("Verify Time:  %d seconds\n", (int)(evt - svt));
-	printf("Total Time:   %d seconds\n", (int)(evt - set));
-	printf("Flash RC: %d\n", rc);
+	dprintf("Erase Time:   %d seconds\n", (int)(eet - set));
+	dprintf("Program Time: %d seconds\n", (int)(ept - spt));
+	dprintf("Verify Time:  %d seconds\n", (int)(evt - svt));
+	dprintf("Total Time:   %d seconds\n", (int)(evt - set));
+	dprintf("Flash RC: %d\n", rc);
 
+__exit0:
 	if (-1 != FPGA_BIN)
 		close(FPGA_BIN);
 	if (-1 != CFG) {
@@ -455,5 +575,7 @@ __exit:
 			flash_reset(CFG, cntl_reg);
 		close(CFG);
 	}
+	if (cfg_file)
+		free(cfg_file);
 	return rc;
 }
