@@ -44,7 +44,8 @@
 #define CAPI_LEGACY0        0x04cf
 #define CAPI_LEGACY1        0x0601
 
-#define PCI_ID              0x0
+#define PCI_ID              0x0       /* Offset for */
+#define SUB_DEV_ID          0x2c      /* Address for Subsystem Device */
 #define PCI_DEVICEID(X)     (((X) >> 16) & 0xFFFF)
 #define PCI_VENDORID(X)     ((X) & 0xFFFF)
 #define PCI_ECAP            0x100
@@ -76,6 +77,9 @@
 #define FLASH_ERR_CFG_WRITE 100
 #define FLASH_ERR_CFG_READ  200
 
-#define FLASH_READ_SIZE     0x200               /* 512 Words */
+#define FLASH_READ_SIZE            0x200           /* 512 Words */
+#define	DEFAULT_USER_FLASH_ADDRESS 0x02000000
+#define DEFAULT_BLOCK_SIZE         256
+#define DEFAULT_CAPI_CARD          0
 
 #endif
