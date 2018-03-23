@@ -245,9 +245,11 @@ PID=$!
 wait $PID
 trap - TERM INT
 wait $PID
-
-# reset card
-reset_card $c user
+RC=$?
+if [ $RC -eq 0 ]; then
+	# reset card only if Flashing was good
+	reset_card $c user
+fi
 
 # remind afu to use in host application
 # Y.Lu: This is not needed for SNAP. The DEVICE may not be in dedicated mode. Comment off.
