@@ -21,11 +21,12 @@ ifneq ($(prefix),)
 prefix=/usr/local
 endif
 
-HAS_GIT = $(shell git describe > /dev/null 2>&1 && echo y || echo n)
-VERSION=0.1.2
+HAS_GIT = $(shell git describe --tags > /dev/null 2>&1 && echo y || echo n)
+VERSION=0.0.99-no-git
+
 ifeq (${HAS_GIT},y)
-	GIT_BRANCH=$(shell git describe --abbrev=4 --always --tags | sed -e 's/v//g')
-	VERSION:=$(VERSION)-$(GIT_BRANCH)
+	GIT_BRANCH=$(shell git describe --always --tags)
+	VERSION:=$(GIT_BRANCH)
 endif
 
 CFLAGS=-Wall -W -g -O2 -I./include -DGIT_VERSION=\"$(VERSION)\"
