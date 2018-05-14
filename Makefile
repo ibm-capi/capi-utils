@@ -21,7 +21,15 @@ ifneq ($(prefix),)
 prefix=/usr/local
 endif
 
-CFLAGS=-Wall -W -g -O2 -I./include
+HAS_GIT = $(shell git describe --tags > /dev/null 2>&1 && echo y || echo n)
+VERSION=0.0.99-no-git
+
+ifeq (${HAS_GIT},y)
+	GIT_BRANCH=$(shell git describe --always --tags)
+	VERSION:=$(GIT_BRANCH)
+endif
+
+CFLAGS=-Wall -W -g -O2 -I./include -DGIT_VERSION=\"$(VERSION)\"
 
 ARCH_SUPPORTED:=$(shell echo -e "\n\#if !(defined(_ARCH_PPC64) && defined(_LITTLE_ENDIAN))"\
 	"\n\#error \"This tool is only supported on ppc64le architecture\""\
