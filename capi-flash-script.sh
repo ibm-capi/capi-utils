@@ -192,11 +192,14 @@ if [[ ${fpga_type[$c]} == "Altera" ]]; then
     printf "${bold}ERROR: ${normal}Wrong file extension: .rbf must be used for boards with Altera FPGA\n"
     exit 0
   fi
-else
+elif [[ ${fpga_type[$c]} == "Xilinx" ]]; then
   if [[ $FILE_EXT != "bin" ]]; then
     printf "${bold}ERROR: ${normal}Wrong file extension: .bin must be used for boards with Xilinx FPGA\n"
     exit 0
   fi
+else 
+  printf "${bold}ERROR: ${normal}Card not listed in psl-devices!\n"
+  exit 0
 fi
 
 # get flash address and block size

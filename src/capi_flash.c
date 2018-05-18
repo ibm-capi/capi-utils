@@ -303,9 +303,14 @@ int main (int argc, char *argv[])
 			{ "factory",   required_argument, NULL, 'p' },
 			{ 0,           no_argument,       NULL, 0   },
 		};
-		cmd = getopt_long(argc, argv, "vhVqpC:a:b:f:",
+		cmd = getopt_long(argc, argv, ":vhVqpC:a:b:f:",
 				long_options, &option_index);
 		if (-1 == cmd) break;   /* all params processed ? */ 
+		/* if next option is taken as argument when the required argument is missing */
+		if (optarg && (optarg[0] == '-') ) {
+		        eprintf("%s Invalid or missing argument for option '-%c': %s\n", argv[0], cmd, optarg);
+			exit(0);
+		}
 		switch (cmd) {
 		case 'v':
 			verbose++;
@@ -336,8 +341,13 @@ int main (int argc, char *argv[])
 		case 'p':  /* factory */
 			factory = true;
 			break;
+		case ':': /* missing argument (: must be first in getopt_long) */
+		        eprintf("%s Missing argument for option '-%c'\n", argv[0], optopt);
+			help(argv[0]);
+			exit(0);
+		case '?':
 		default:
-			eprintf("%s Invalid Option\n", argv[0]);
+			eprintf("%s Invalid Option '-%c'\n", argv[0], optopt);
 			help(argv[0]);
 			exit(0);
 		}
