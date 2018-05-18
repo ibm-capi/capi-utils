@@ -192,11 +192,14 @@ if [[ ${fpga_type[$c]} == "Altera" ]]; then
     printf "${bold}ERROR: ${normal}Wrong file extension: .rbf must be used for boards with Altera FPGA\n"
     exit 0
   fi
-else
+elif [[ ${fpga_type[$c]} == "Xilinx" ]]; then
   if [[ $FILE_EXT != "bin" ]]; then
     printf "${bold}ERROR: ${normal}Wrong file extension: .bin must be used for boards with Xilinx FPGA\n"
     exit 0
   fi
+else 
+  printf "${bold}ERROR: ${normal}Card not listed in psl-devices!\n"
+  exit 0
 fi
 
 # get flash address and block size
@@ -206,9 +209,6 @@ fi
 if [ -z "$flash_block_size" ]; then
   flash_block_size=${flash_block[$c]}
 fi
-# Update block size to Bytes
-flash_block_size=$(($flash_block_size * 1024))
-
 
 # card is set via parameter since it is positive
 if (($force != 1)); then
@@ -243,14 +243,16 @@ fi
 
 trap 'kill -TERM $PID; perst_factory $c' TERM INT
 # flash card with corresponding binary
-$package_root/capi-flash $1 $c $flash_address $flash_block_size &
+$package_root/capi-flash --file $1 --card $c --address $flash_address --blocksize $flash_block_size &
 PID=$!
 wait $PID
 trap - TERM INT
 wait $PID
-
-# reset card
-reset_card $c user
+RC=$?
+if [ $RC -eq 0 ]; then
+	# reset card only if Flashing was good
+	reset_card $c user
+fi
 
 # remind afu to use in host application
 # Y.Lu: This is not needed for SNAP. The DEVICE may not be in dedicated mode. Comment off.
