@@ -40,7 +40,16 @@ if [ -n "$1" ]; then
     		printf "${bold}ERROR:${normal} Wrong card number ${card}\n"
     		exit 1
   	fi
-        reset_card $card factory "Resetting CAPI Adapter $card"
+        if [ -n "$2" ]; then
+            region=$2;
+            if [[ "$region" != "factory" && "$region" != "user" ]]; then
+    		    printf "${bold}ERROR:${normal} Only supports \"factory\" or \"user\".\n"
+    		    exit 1
+  	        fi
+            reset_card $card $region "Resetting CAPI Adapter $card"
+        else
+            reset_card $card factory "Resetting CAPI Adapter $card"
+        fi
 else
         confirm
 	#Find all the CAPI cards in the system

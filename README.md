@@ -26,7 +26,12 @@ Please note that the `capi-flash` binaries should be located in the installation
 
 # capi_reset
 
-Usage: `sudo capi-reset <CARD_ID>`
+Usage: 
+```
+sudo capi-reset <CARD_ID>                   -- Reset Card # to factory region (default)
+sudo capi-reset                             -- Reset all of the CAPI cards in the system
+sudo capi-reset <CARD_ID>  user|factory     -- Reset Card # to user or factory region
+```
 
 Usually you *don't* need this script. Because the above capi-flash-script already includes this reset step. But if your AFU doesn't exit correctly and leave the FPGA into an unknown state, you can use this script alone to reset FPGA chip, and avoid programming the flash again.
 
