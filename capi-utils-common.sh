@@ -57,9 +57,11 @@ function reset_card() {
   [ -n "$3" ] && printf "$3\n" || printf "Preparing to reset card\n"
   [ -n "$4" ] && reset_timeout=$4
   sleep 5
-  printf "Resetting card\n"
+  printf "Resetting card $1: "
   c=$1
   printf $2 > /sys/class/cxl/card$c/load_image_on_perst
+  ic=`cat /sys/class/cxl/card$c/load_image_on_perst`
+  printf "load_image_on_perst is set to \"$ic\". Reset!\n"
   printf 1 > /sys/class/cxl/card$c/reset
   sleep 5
   while true; do
