@@ -236,6 +236,10 @@ if [ $flash_type == "SPIx8" ]; then
     fi
     #Assign secondary address
     flash_address2=${flash_secondary[$c]}
+    if [ -z "$flash_address2" ]; then
+        printf "${bold}ERROR:${normal} The second address must be assigned in file psl-device\n"
+        exit 1
+    fi
 fi
 
 
@@ -243,11 +247,11 @@ fi
 if (($force != 1)); then
   # prompt to confirm
   while true; do
-    printf "The script is going to flash ${bold}$1${normal} " 
+    printf "Will flash ${bold}card$c${normal} with ${bold}$1${normal}" 
     if [ $flash_type == "SPIx8" ]; then
-        printf "and ${bold}$2${normal} " 
+        printf "and ${bold}$2${normal}" 
     fi
-    read -p "to ${bold}card$c${normal}. Do you want to continue? [y/n] " yn
+    read -p ". Do you want to continue? [y/n] " yn
     case $yn in
       [Yy]* ) break;;
       [Nn]* ) exit;;
@@ -255,7 +259,11 @@ if (($force != 1)); then
     esac
   done
 else
-  printf "Continue to flash ${bold}$1${normal} to ${bold}card$c${normal}\n"
+  printf "Continue to flash ${bold}$1${normal} ";
+  if [ $flash_type == "SPIx8" ]; then
+    printf "and ${bold}$2${normal} " 
+  fi
+  printf "to ${bold}card$c${normal}\n"
 fi
 
 printf "\n"
@@ -292,6 +300,6 @@ trap - TERM INT
 wait $PID
 RC=$?
 if [ $RC -eq 0 ]; then
-	# reset card only if Flashing was good
-	reset_card $c user
+  # reset card only if Flashing was good
+  reset_card $c user
 fi
