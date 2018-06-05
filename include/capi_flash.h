@@ -67,6 +67,7 @@
 #define FLASH_PROG_STATUS   (1 << 14)
 #define FLASH_READ_STATUS   (1 << 13)
 #define FLASH_PORT_READY    (1 << 12)
+#define FLASH_RDATA_VALID   (1 << 11)
 #define FLASH_DATA_OFFSET   0x5C
 #define FLASH_CHECK_BIT(X,Y,Z)  (((X) & (Y)) == (Z)) 
 // Flash error codes
@@ -77,9 +78,15 @@
 #define FLASH_ERR_CFG_WRITE 100
 #define FLASH_ERR_CFG_READ  200
 
-#define FLASH_READ_SIZE            0x200           /* 512 Words */
-#define	DEFAULT_USER_FLASH_ADDRESS 0x02000000
-#define DEFAULT_BLOCK_SIZE         256
-#define DEFAULT_CAPI_CARD          0
+#define FLASH_READ_SIZE                   0x200           /* 512 Words */
+#define	DEFAULT_USER_FLASH_ADDRESS        0x02000000
+
+#define DEFAULT_FACTORY_FLASH_ADDRESS_PRI       0x0
+#define DEFAULT_FACTORY_FLASH_ADDRESS_SEC       0x02000000
+#define	DEFAULT_USER_FLASH_ADDRESS_PRI          0x01000000
+#define	DEFAULT_USER_FLASH_ADDRESS_SEC          0x03000000
+
+#define DEFAULT_BLOCK_SIZE             256
+#define DEFAULT_CAPI_CARD              0
 
 #endif

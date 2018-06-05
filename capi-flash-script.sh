@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Usage: sudo capi-flash-script.sh <path-to-bit-file>
+# Usage: sudo capi-flash-script.sh <path-to-bin-file>
 
 # get capi-utils root
 [ -h $0 ] && package_root=`ls -l "$0" |sed -e 's|.*-> ||'` || package_root="$0"
@@ -26,7 +26,9 @@ program=`basename "$0"`
 card=-1
 
 flash_address=""
+flash_address2=""
 flash_block_size=""
+flash_type=""
 
 reset_factory=0
 
@@ -40,7 +42,8 @@ function usage() {
   echo "    [-r] Reset adapter to factory before writing to flash."
   echo "    [-V] Print program version (${version})"
   echo "    [-h] Print this help message."
-  echo "    <path-to-bit-file>"
+  echo "    <path-to-bin-file>"
+  echo "    <path-to-secondary-bin-file> (Only for SPIx8 device)"
   echo
   echo "Utility to flash/write bitstreams to CAPI FPGA cards."
   echo "Please ensure that you are using the right bitstream data."
@@ -132,7 +135,7 @@ done
 printf "\n${bold}Current date:${normal}\n$(date)\n\n"
 
 # print table header
-printf "${bold}%-7s %-30s %-29s %-20s %s${normal}\n" "#" "Card" "Flashed" "by" "Image"
+printf "${bold}%-7s %-30s %-29s %-20s %s${normal}\n" "#" "Card" "Flashed" "by" "Last Image"
 
 # print card information and flash history
 i=0;
@@ -150,6 +153,8 @@ while read d; do
       fpga_type[$i]=${parse_info[2]}
       flash_partition[$i]=${parse_info[3]}
       flash_block[$i]=${parse_info[4]}
+      flash_interface[$i]=${parse_info[5]}
+      flash_secondary[$i]=${parse_info[6]}
       printf "%-7s %-30s %-29s %-20s %s\n" "card$i" "${line:6:25}" "${f:0:29}" "${f:30:20}" "${f:51}"
     fi
   done < "$package_root/psl-devices"
@@ -209,12 +214,40 @@ fi
 if [ -z "$flash_block_size" ]; then
   flash_block_size=${flash_block[$c]}
 fi
+if [ -z "$flash_type" ]; then
+  flash_type=${flash_interface[$c]}
+fi
+if [ -z "$flash_type" ]; then
+  flash_type="BPIx16" #If it is not listed in psl-device file, use default value
+fi
+
+# Deal with the second argument
+if [ $flash_type == "SPIx8" ]; then
+    if [ $# -eq 1 ]; then
+      printf "${bold}ERROR:${normal} Input argument missing. The seleted device is SPIx8 and needs both primary and secondary bin files\n"
+      usage
+      exit 1
+    fi
+    #Check the second file
+    if [[ ! -e $2 ]]; then
+      printf "${bold}ERROR:${normal} $2 not found\n"
+      usage
+      exit 1
+    fi
+    #Assign secondary address
+    flash_address2=${flash_secondary[$c]}
+fi
+
 
 # card is set via parameter since it is positive
 if (($force != 1)); then
   # prompt to confirm
   while true; do
-    read -p "Do you want to continue to flash ${bold}$1${normal} to ${bold}card$c${normal}? [y/n] " yn
+    printf "The script is going to flash ${bold}$1${normal} " 
+    if [ $flash_type == "SPIx8" ]; then
+        printf "and ${bold}$2${normal} " 
+    fi
+    read -p "to ${bold}card$c${normal}. Do you want to continue? [y/n] " yn
     case $yn in
       [Yy]* ) break;;
       [Nn]* ) exit;;
@@ -228,8 +261,11 @@ fi
 printf "\n"
 
 # update flash history file
-printf "%-29s %-20s %s\n" "$(date)" "$(logname)" $1 > /var/cxl/card$c
-
+if [ $flash_type == "SPIx8" ]; then
+  printf "%-29s %-20s %s %s\n" "$(date)" "$(logname)" $1 $2 > /var/cxl/card$c
+else
+  printf "%-29s %-20s %s\n" "$(date)" "$(logname)" $1 > /var/cxl/card$c
+fi
 # Check if lowlevel flash utility is existing and executable
 if [ ! -x $package_root/capi-flash ]; then
   printf "${bold}ERROR:${normal} Utility capi-flash not found!\n"
@@ -243,7 +279,13 @@ fi
 
 trap 'kill -TERM $PID; perst_factory $c' TERM INT
 # flash card with corresponding binary
-$package_root/capi-flash --file $1 --card $c --address $flash_address --blocksize $flash_block_size &
+if [ $flash_type == "SPIx8" ]; then
+  # SPIx8 needs two file inputs (primary/secondary)
+  $package_root/capi-flash --type $flash_type --file $1 --file2 $2   --card $c --address $flash_address --address2 $flash_address2 --blocksize $flash_block_size &
+else
+  $package_root/capi-flash --type $flash_type --file $1              --card $c --address $flash_address --blocksize $flash_block_size &
+fi
+
 PID=$!
 wait $PID
 trap - TERM INT
@@ -253,10 +295,3 @@ if [ $RC -eq 0 ]; then
 	# reset card only if Flashing was good
 	reset_card $c user
 fi
-
-# remind afu to use in host application
-# Y.Lu: This is not needed for SNAP. The DEVICE may not be in dedicated mode. Comment off.
-
-# printf "\nMake sure to use ${bold}/dev/cxl/afu$c.0d${normal} in your host application;\n\n"
-# printf "#define DEVICE \"/dev/cxl/afu$c.0d\"\n"
-# printf "struct cxl_afu_h *afu = cxl_afu_open_dev ((char*) (DEVICE));\n\n"
