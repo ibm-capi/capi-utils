@@ -251,17 +251,17 @@ static int flash_wait_ready(int cfg, int cntl_reg, int cntl_remain)
 static void help(const char *prog)
 {
 	printf("Usage: %s [options]\n"
-		"	  -h, --help	This help\n"
-		"	  -v, --verbose	More Verbose\n"
-		"	  -V, --version	Print version\n"
-		"	  -q, --quiet	No messages\n"
-		"	  -p, --factory	Program Factory Side (NEW)\n"
-		"	  -a, --address	Flash Address (default: 0x%8.8x)\n"
-		"	  -A, --address2	Flash Address Secondary (optional, only for SPIx8)\n"
-		"	  -b, --blocksize	Flash Block Size (default: %d KB)\n"
-		"	  -C, --card	Capi Card number (default: %d)\n"
-		"	  -f, --file	File to flash\n"
-		"	  -F, --file2	File to flash Secondary (optional, only for SPIx8)\n\n", prog,
+		"	  -h, --help       This help\n"
+		"	  -v, --verbose    More Verbose\n"
+		"	  -V, --version    Print version\n"
+		"	  -q, --quiet      No messages\n"
+		"	  -p, --factory    Program Factory Side (NEW)\n"
+		"	  -a, --address    Flash Address (default: 0x%8.8x)\n"
+		"	  -A, --address2   Flash Address Secondary (optional, only for SPIx8)\n"
+		"	  -b, --blocksize  Flash Block Size (default: %d KB)\n"
+		"	  -C, --card       Capi Card number (default: %d)\n"
+		"	  -f, --file       File to flash\n"
+		"	  -F, --file2      File to flash Secondary (optional, only for SPIx8)\n\n", prog,
 		DEFAULT_USER_FLASH_ADDRESS, DEFAULT_BLOCK_SIZE, DEFAULT_CAPI_CARD);
 	printf("Note: Address(es) should be set explicitly. \n\n");
 }
@@ -304,19 +304,19 @@ int main (int argc, char *argv[])
 	while (1) {
 		int option_index = 0;
 		static struct option long_options[] = {
-			{ "verbose",   no_argument,	  NULL, 'v' },
-			{ "help",	  no_argument,	  NULL, 'h' },
-			{ "version",   no_argument,	  NULL, 'V' },
-			{ "quiet",	 no_argument,	  NULL, 'q' },
-			{ "card",	  required_argument, NULL, 'C' },
+			{ "verbose",   no_argument,       NULL, 'v' },
+			{ "help",      no_argument,       NULL, 'h' },
+			{ "version",   no_argument,       NULL, 'V' },
+			{ "quiet",     no_argument,       NULL, 'q' },
+			{ "card",      required_argument, NULL, 'C' },
 			{ "address",   required_argument, NULL, 'a' },
 			{ "address2",  required_argument, NULL, 'A' },
 			{ "blocksize", required_argument, NULL, 'b' },
-			{ "file",	  required_argument, NULL, 'f' },
-			{ "file2",	 required_argument, NULL, 'F' },
+			{ "file",      required_argument, NULL, 'f' },
+			{ "file2",     required_argument, NULL, 'F' },
 			{ "factory",   required_argument, NULL, 'p' },
-			{ "type",	  required_argument, NULL, 't' },
-			{ 0,		   no_argument,	  NULL, 0   },
+			{ "type",      required_argument, NULL, 't' },
+			{ 0,           no_argument,       NULL, 0   },
 		};
 		cmd = getopt_long(argc, argv, ":vhVqpC:a:A:b:f:F:t:",
 				long_options, &option_index);
@@ -403,22 +403,22 @@ int main (int argc, char *argv[])
 	}
 
 	/* Print collected arguments */
-	vprintf1("CAPI CFG Dir	 : %s\n", cfg_file);
-	vprintf1("Flash Type	   : %s\n", flash_type);
+	vprintf1("CAPI CFG Dir   : %s\n", cfg_file);
+	vprintf1("Flash Type     : %s\n", flash_type);
 	if (is_SPIx8 ) {
-		vprintf1("File to Flash (primary)	: %s\n",   fpga_file[0]);
-		vprintf1("	 Write to  adddress	: 0x%x\n", flash_address[0]);
-		vprintf1("File to Flash (secondary)  : %s\n", fpga_file[1]);
-		vprintf1("	 Write to  adddress	: 0x%x\n", flash_address[1]);
+		vprintf1("File to Flash (primary)   : %s\n",   fpga_file[0]);
+		vprintf1("       Write to  adddress : 0x%x\n", flash_address[0]);
+		vprintf1("File to Flash (secondary) : %s\n", fpga_file[1]);
+		vprintf1("       Write to  adddress : 0x%x\n", flash_address[1]);
 	} else {
-		vprintf1("File to Flash	: %s\n",   fpga_file[0]);
-		vprintf1("Flash Address	: 0x%x\n", flash_address[0]);
+		vprintf1("File to Flash : %s\n",   fpga_file[0]);
+		vprintf1("Flash Address : 0x%x\n", flash_address[0]);
 	}
 
 	vprintf1("Flash Block Size : %d (*1024 Bytes)\n", flash_block_size);
-	vprintf1("Quiet Flag	   : %d\n", quiet);
-	vprintf1("Verbose Flag	 : %d\n", verbose);
-	vprintf1("Factory Flag	 : %d\n", factory);
+	vprintf1("Quiet Flag     : %d\n", quiet);
+	vprintf1("Verbose Flag   : %d\n", verbose);
+	vprintf1("Factory Flag   : %d\n", factory);
 
 	/* Look for VSEC Offset and locate Flash Registers */
 	int config_word = 0;
@@ -592,7 +592,7 @@ int main (int argc, char *argv[])
 		dprintf("Verifying Flash\n");
 
 		lseek(FPGA_BIN, 0, SEEK_SET);   // Reset to beginning of file
-		svt = time(NULL);			// Get Start Verify Time
+		svt = time(NULL);		// Get Start Verify Time
 		bc = 0;
 
 		raddress = address;
