@@ -255,6 +255,7 @@ static void help(const char *prog)
 		"	  -v, --verbose    More Verbose\n"
 		"	  -V, --version    Print version\n"
 		"	  -q, --quiet      No messages\n"
+		"	  -t, --type       BPIx16, SPIx4, SPIx8 (default: BPIx16)\n"
 		"	  -p, --factory    Program Factory Side (NEW)\n"
 		"	  -a, --address    Flash Address (default: 0x%8.8x)\n"
 		"	  -A, --address2   Flash Address Secondary (optional, only for SPIx8)\n"
@@ -520,7 +521,11 @@ int main (int argc, char *argv[])
 		num_blocks = fsize / (flash_block_size * 1024);
 		// Size of flash block in words. Flash word = 4B
 		flash_block_size_words = flash_block_size * 1024 / 4;
-		dprintf("Programming User Partition (@ 0x%08X) with %ld Bytes from File: %s\n",
+                if (factory == true)
+		        dprintf("Programming Factory Partition");
+                else
+                        dprintf("Programming User Partition");
+                dprintf("(@ 0x%08X) with %ld Bytes from File: %s\n",
 				address, fsize, fpga_file[round]);
 		dprintf("  Program -> for Size: %d in blocks (%dK Words or %dK Bytes)\n\n",num_blocks,
 			flash_block_size/4 , flash_block_size);
