@@ -556,7 +556,7 @@ int main (int argc, char *argv[])
 		int i;
 		dprintf("Writing Block:");
 
-		//TODO: Why do I have to add 64 for SPI device?
+		//Need to add 64 for SPI device
 		//Otherwise stuck at waiting for FLASH_OP_DONE
 		for (i = 0; i < flash_words + (is_SPI ? 64: 0); i++) {
 			dif = read(FPGA_BIN, &dat, 4);
@@ -669,16 +669,16 @@ int main (int argc, char *argv[])
 
 		rc = 0;		   /* Good */
 		dprintf("\n");
-		evt = time(NULL);  /* Get End of Verifaction time */
+		evt = time(NULL);  /* Get End of verification time */
 		//# -------------------------------------------------------------------------------
 		//# Calculate and Print Elapsed Times
 		//# -------------------------------------------------------------------------------
 		dprintf("Erase Time:   %d seconds\n", (int)(eet - set));
 		dprintf("Program Time: %d seconds\n", (int)(ept - spt));
 		dprintf("Verify Time:  %d seconds\n", (int)(evt - svt));
-		dprintf("Total Time:   %d seconds\n", (int)(evt - set));
-
 	} // End Loop
+
+	dprintf("\nTotal Time:   %d seconds\n", (int)(evt - set));
 
 
 __exit:
