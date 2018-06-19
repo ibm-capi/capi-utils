@@ -272,7 +272,7 @@ int main (int argc, char *argv[])
 	int dat, dif, edat;
 	int CFG = -1;
 	int FPGA_BIN = -1;
-	time_t eet, set, ept, spt, svt, evt;
+	time_t t0, eet, set, ept, spt, svt, evt;
 	int address, raddress, ma;
 	int cntl_remain = 0;
 	int rc = -1;
@@ -282,8 +282,8 @@ int main (int argc, char *argv[])
 	cntl_reg = 0;
 	char *cfg_file = NULL;
 	int  print_cnt = 0;
-	set = time(NULL);  /* Start Erase Time */
-	eet = ept = spt = svt = evt = set;
+	t0 = time(NULL);  /* Start Time */
+	eet = ept = spt = svt = evt = set = t0;
 
 	int card_no = DEFAULT_CAPI_CARD;
 	bool factory = false;
@@ -479,8 +479,12 @@ int main (int argc, char *argv[])
 
 	int round = 0; 
 	for (round = 0; round < (is_SPIx8 ? 2 : 1); round ++) {
+		set = time(NULL);  /* Start Erase Time */
 		if (round == 1)
-			dprintf("Process secondary file.\n");
+			dprintf("------------------------------------------\nProcess secondary file.\n");
+		else
+			dprintf("------------------------------------------\n");
+
 
 		/* Check for files */
 		if (NULL == fpga_file[round]) {
@@ -678,11 +682,13 @@ int main (int argc, char *argv[])
 		dprintf("Verify Time:  %d seconds\n", (int)(evt - svt));
 	} // End Loop
 
-	dprintf("\nTotal Time:   %d seconds\n", (int)(evt - set));
+	dprintf("------------------------------------------\n");
+	dprintf("Total Time:   %d seconds\n", (int)(evt - t0));
 
 
 __exit:
 	dprintf("Flash RC: %d\n", rc);
+	dprintf("------------------------------------------\n");
 
 __exit0:
 	if (-1 != FPGA_BIN)
