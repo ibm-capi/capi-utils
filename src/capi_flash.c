@@ -558,7 +558,7 @@ int main (int argc, char *argv[])
 
 		int bc = 0;
 		int i;
-		dprintf("Writing Block:");
+		dprintf("Writing Block:\n");
 
 		//Need to add 64 for SPI device
 		//Otherwise stuck at waiting for FLASH_OP_DONE
@@ -572,7 +572,7 @@ int main (int argc, char *argv[])
 			if (0 != rc)
 				goto __exit;
 			if (((i+1) % (flash_block_size_words)) == 0) {
-				dprintf(" %d",bc);
+				dprintf("\r %d",bc);
 				bc++;
 			}
 		}
@@ -606,7 +606,7 @@ int main (int argc, char *argv[])
 
 		raddress = address;
 		ma = address;
-		dprintf("Reading Block:");
+		dprintf("Reading Block:\n");
 		
 		if(is_SPI) {
 			//SPI needs to send a READ_REQ at the beginning.
@@ -666,7 +666,7 @@ int main (int argc, char *argv[])
 			}
 
 			if (((i+1) % (flash_block_size_words)) == 0) {
-				dprintf(" %d", bc);
+				dprintf("\r %d", bc);
 				bc++;
 			}
 		} //Verify done.
