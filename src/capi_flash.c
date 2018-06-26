@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -251,16 +251,20 @@ static int flash_wait_ready(int cfg, int cntl_reg, int cntl_remain)
 static void help(const char *prog)
 {
 	printf("Usage: %s [options]\n"
-		"      -h, --help       This help\n"
-		"      -v, --verbose    More Verbose\n"
-		"      -V, --version    Print version\n"
-		"      -q, --quiet      No messages\n"
-		"      -p, --factory    Program Factory (primary) Side (NEW)\n"
-		"      -a, --address    Flash Address (default: 0x%8.8x)\n"
-		"      -b, --blocksize  Flash Block Size (default: %d KB)\n"
-		"      -C, --card       Capi Card number (default: %d)\n"
-		"      -f, --file       File to flash\n\n", prog,
+		"	  -h, --help       This help\n"
+		"	  -v, --verbose    More Verbose\n"
+		"	  -V, --version    Print version\n"
+		"	  -q, --quiet      No messages\n"
+		"	  -t, --type       BPIx16, SPIx4, SPIx8 (default: BPIx16)\n"
+		"	  -p, --factory    Program Factory Side (NEW)\n"
+		"	  -a, --address    Flash Address (default: 0x%8.8x)\n"
+		"	  -A, --address2   Flash Address Secondary (optional, only for SPIx8)\n"
+		"	  -b, --blocksize  Flash Block Size (default: %d KB)\n"
+		"	  -C, --card       Capi Card number (default: %d)\n"
+		"	  -f, --file       File to flash\n"
+		"	  -F, --file2      File to flash Secondary (optional, only for SPIx8)\n\n", prog,
 		DEFAULT_USER_FLASH_ADDRESS, DEFAULT_BLOCK_SIZE, DEFAULT_CAPI_CARD);
+	printf("Note: Address(es) should be set explicitly. \n\n");
 }
 
 int main (int argc, char *argv[])
@@ -268,8 +272,8 @@ int main (int argc, char *argv[])
 	int dat, dif, edat;
 	int CFG = -1;
 	int FPGA_BIN = -1;
-	time_t eet, set, ept, spt, svt, evt;
-	int address, raddress;
+	time_t t0, eet, set, ept, spt, svt, evt;
+	int address, raddress, ma;
 	int cntl_remain = 0;
 	int rc = -1;
 	int flash_words;
@@ -278,17 +282,26 @@ int main (int argc, char *argv[])
 	cntl_reg = 0;
 	char *cfg_file = NULL;
 	int  print_cnt = 0;
-	set = time(NULL);  /* Start Erase Time */
-	eet = ept = spt = svt = evt = set;
+	t0 = time(NULL);  /* Start Time */
+	eet = ept = spt = svt = evt = set = t0;
 
 	int card_no = DEFAULT_CAPI_CARD;
-	int flash_address = DEFAULT_USER_FLASH_ADDRESS;  // 0x02000000;
-	int flash_block_size = DEFAULT_BLOCK_SIZE;       // 256 KB;
-
 	bool factory = false;
-	const char *fpga_file = NULL;
-	int cmd;
+	const char *flash_type = "BPIx16";			//default
+	int flash_block_size = DEFAULT_BLOCK_SIZE;		// 256 KB;
 
+	int flash_address[2]; //Primary and Secondary
+	flash_address[0] = DEFAULT_USER_FLASH_ADDRESS;
+	flash_address[1] = DEFAULT_USER_FLASH_ADDRESS_SEC;
+
+	const char *fpga_file[2];
+	fpga_file[0] = NULL;
+	fpga_file[1] = NULL;  //For SPIx8 (dual SPIx4) devices
+
+	bool is_SPIx8 = false;
+	bool is_SPI   = false;
+	
+	int cmd;
 	while (1) {
 		int option_index = 0;
 		static struct option long_options[] = {
@@ -298,17 +311,20 @@ int main (int argc, char *argv[])
 			{ "quiet",     no_argument,       NULL, 'q' },
 			{ "card",      required_argument, NULL, 'C' },
 			{ "address",   required_argument, NULL, 'a' },
+			{ "address2",  required_argument, NULL, 'A' },
 			{ "blocksize", required_argument, NULL, 'b' },
 			{ "file",      required_argument, NULL, 'f' },
+			{ "file2",     required_argument, NULL, 'F' },
 			{ "factory",   required_argument, NULL, 'p' },
+			{ "type",      required_argument, NULL, 't' },
 			{ 0,           no_argument,       NULL, 0   },
 		};
-		cmd = getopt_long(argc, argv, ":vhVqpC:a:b:f:",
+		cmd = getopt_long(argc, argv, ":vhVqpC:a:A:b:f:F:t:",
 				long_options, &option_index);
-		if (-1 == cmd) break;   /* all params processed ? */ 
+		if (-1 == cmd) break;	/* all params processed ? */ 
 		/* if next option is taken as argument when the required argument is missing */
 		if (optarg && (optarg[0] == '-') ) {
-		        eprintf("%s Invalid or missing argument for option '-%c': %s\n", argv[0], cmd, optarg);
+			eprintf("%s Invalid or missing argument for option '-%c': %s\n", argv[0], cmd, optarg);
 			exit(0);
 		}
 		switch (cmd) {
@@ -330,19 +346,28 @@ int main (int argc, char *argv[])
 			card_no = strtol(optarg, (char **)NULL, 0);
 			break;
 		case 'a':
-			flash_address = strtol(optarg, (char **)NULL, 0);
+			flash_address[0] = strtol(optarg, (char **)NULL, 0);
+			break;
+		case 'A':
+			flash_address[1] = strtol(optarg, (char **)NULL, 0);
 			break;
 		case 'b':
 			flash_block_size = strtol(optarg, (char **)NULL, 0);
 			break;
 		case 'f':
-			fpga_file = optarg;
+			fpga_file[0] = optarg;
+			break;
+		case 'F':
+			fpga_file[1] = optarg;
+			break;
+		case 't':
+			flash_type = optarg;
 			break;
 		case 'p':  /* factory */
 			factory = true;
 			break;
 		case ':': /* missing argument (: must be first in getopt_long) */
-		        eprintf("%s Missing argument for option '-%c'\n", argv[0], optopt);
+			eprintf("%s Missing argument for option '-%c'\n", argv[0], optopt);
 			help(argv[0]);
 			exit(0);
 		case '?':
@@ -353,22 +378,12 @@ int main (int argc, char *argv[])
 		}
 	}
 
-	if (NULL == fpga_file) {
-		eprintf("%s Missing Option -f -a -b and -C must be set\n", argv[0]);
-		help(argv[0]);
-		rc = EINVAL;
-		goto __exit0;
-	}
-	/* Set Address to 0 in case factory flag is set */
-	if (factory)
-		flash_address = 0;
-	if ((FPGA_BIN = open(fpga_file, O_RDONLY)) < 0) {
-		perror("Error");
-		eprintf("Can not open %s\n", fpga_file);
-		rc = ENOENT;
-		goto __exit0;
-	}
+	if (strcmp(flash_type, "SPIx8") == 0)
+		is_SPIx8 = true;
+	if (strcmp(flash_type, "BPIx16") != 0)
+		is_SPI   = true;
 
+	/* Check card_no and cfg_file */
 	if (asprintf(&cfg_file, CXL_SYSFS_PATH"%d"CXL_CONFIG, card_no) == -1) {
 		perror("Error");
 		eprintf("Can not Create: "CXL_SYSFS_PATH);
@@ -382,18 +397,34 @@ int main (int argc, char *argv[])
 		goto __exit0;
 	}
 
+	/* Set Address to 0 in case factory flag is set */
+	if (factory) {
+		flash_address[0] = 0;
+		flash_address[1] = DEFAULT_FACTORY_FLASH_ADDRESS_SEC;
+	}
+
+	/* Print collected arguments */
+	vprintf1("CAPI CFG Dir   : %s\n", cfg_file);
+	vprintf1("Flash Type     : %s\n", flash_type);
+	if (is_SPIx8 ) {
+		vprintf1("File to Flash (primary)   : %s\n",   fpga_file[0]);
+		vprintf1("       Write to  adddress : 0x%x\n", flash_address[0]);
+		vprintf1("File to Flash (secondary) : %s\n", fpga_file[1]);
+		vprintf1("       Write to  adddress : 0x%x\n", flash_address[1]);
+	} else {
+		vprintf1("File to Flash : %s\n",   fpga_file[0]);
+		vprintf1("Flash Address : 0x%x\n", flash_address[0]);
+	}
+
+	vprintf1("Flash Block Size : %d (*1024 Bytes)\n", flash_block_size);
+	vprintf1("Quiet Flag     : %d\n", quiet);
+	vprintf1("Verbose Flag   : %d\n", verbose);
+	vprintf1("Factory Flag   : %d\n", factory);
+
+	/* Look for VSEC Offset and locate Flash Registers */
 	int config_word = 0;
 	int sub_dev = 0;
 	int vsec_offset = 0;
-
-	vprintf1("CAPI CFG Dir     : %s\n", cfg_file);
-	vprintf1("File to Flash    : %s\n", fpga_file);
-	vprintf1("Flash Address    : 0x%x\n", flash_address);
-	vprintf1("Flash Block Size : %d (*1024 Bytes)\n", flash_block_size);
-	vprintf1("Quiet Flag       : %d\n", quiet);
-	vprintf1("Verbose Flag     : %d\n", quiet);
-	vprintf1("Factory Flag     : %d\n", factory);
-
 	if (read_config_word(CFG, PCI_ID, &config_word))
 		goto __exit;
 	if (read_config_word(CFG, 0x2C, &sub_dev))
@@ -421,14 +452,14 @@ int main (int argc, char *argv[])
 	vprintf1("VSEC Length: 0x%03X\nVSEC ID: 0x%1X\n", vsec_size, vsec_rev);
 	// Set address for flash registers
 	if (vsec_size == 0x80) {
-		vprintf("    Version 0.12\n");
+		vprintf("	Version 0.12\n");
 		addr_reg = vsec_offset + FLASH_ADDR_OFFSET;
 		size_reg = vsec_offset + FLASH_SIZE_OFFSET;
 		cntl_reg = vsec_offset + FLASH_CNTL_OFFSET;
 		data_reg = vsec_offset + FLASH_DATA_OFFSET;
 	} else {
 		// Hard code register values for legacy devices
-		vprintf("    Version 0.10\n");
+		vprintf("	Version 0.10\n");
 		addr_reg = 0x920;
 		size_reg = 0x924;
 		cntl_reg = 0x928;
@@ -440,142 +471,224 @@ int main (int argc, char *argv[])
 	// Set stdout to autoflush
 	setvbuf(stdout, NULL, _IONBF, 0);
 
-	off_t fsize;
-	struct stat tempstat;
-	int num_blocks, flash_block_size_words;
-	// Flash word size is 4B words
-	address = flash_address >> 2;
-	// Find size of FPGA binary
-	if (stat(fpga_file, &tempstat) != 0) {
-		perror("Error");
-		eprintf("Cannot determine size of %s\n", fpga_file);
-		goto __exit;
-	}
-	fsize = tempstat.st_size;
-
-	num_blocks = fsize / (flash_block_size * 1024);
-	// Size of flash block in words. Flash word = 4B
-	flash_block_size_words = flash_block_size * 1024 / 4;
-	dprintf("Programming User Partition (@ 0x%08X) with %ld Bytes from File: %s\n",
-			address, fsize, fpga_file);
-	dprintf("  Program -> for Size: %d in blocks (%dK Words or %dK Bytes)\n\n",num_blocks,
-		flash_block_size/4 , flash_block_size);
-
-	dprintf("Reset Flash\n");
-	if (0 != flash_reset_wait(CFG, cntl_reg))
-		goto __exit;
-
-	dprintf("Erasing Flash\n");
-	rc = flash_erase(CFG, addr_reg, size_reg, cntl_reg,
-			address, num_blocks);
-	eet = time(NULL);  /* End Erase Time */
-	spt = ept = svt = evt = eet;
-	if (0 != rc)
-		goto __exit;
-	/* Number of Write Words (each does have 4 Bytes)  */
-	flash_words = flash_block_size_words * (num_blocks + 1);
 
 	//# -------------------------------------------------------------------------------
-	//# Program Flash
+	//# Main Process: Erase, Program, Verify
 	//# -------------------------------------------------------------------------------
-	dprintf("\n\nProgramming Flash\n");
+	
 
-	int bc = 0;
-	int i;
-	dprintf("Writing Block:");
+	int round = 0; 
+	for (round = 0; round < (is_SPIx8 ? 2 : 1); round ++) {
+		set = time(NULL);  /* Start Erase Time */
+		if (round == 1)
+			dprintf("------------------------------------------\nProcess secondary file.\n");
+		else
+			dprintf("------------------------------------------\n");
 
-	for (i = 0; i < flash_words; i++) {
-		dif = read(FPGA_BIN, &dat, 4);
-		if (!(dif))
-			dat = 0xFFFFFFFF;    /* Provide data for EOF */
-		rc = flash_write(CFG, cntl_reg, data_reg, dat);
+
+		/* Check for files */
+		if (NULL == fpga_file[round]) {
+			eprintf("%s Missing Option -f -a -b and -C must be set\n", argv[0]);
+			help(argv[0]);
+			rc = EINVAL;
+			goto __exit0;
+		}
+
+		if (-1 != FPGA_BIN)
+			close(FPGA_BIN);
+		if ((FPGA_BIN = open(fpga_file[round], O_RDONLY)) < 0) {
+			perror("Error");
+			eprintf("Can not open %s\n", fpga_file[round]);
+			rc = ENOENT;
+			goto __exit0;
+		}
+		
+		off_t fsize;
+		struct stat tempstat;
+		int num_blocks, flash_block_size_words;
+
+		// Flash address is byte for SPI
+		// Flash address is 4B words for BPIx16
+		if ( is_SPI )
+			address = flash_address[round];
+		else
+			address = flash_address[round] >> 2;
+		
+		// Find size of FPGA binary
+		if (stat(fpga_file[round], &tempstat) != 0) {
+			perror("Error");
+			eprintf("Cannot determine size of %s\n", fpga_file[round]);
+			goto __exit;
+		}
+		fsize = tempstat.st_size;
+
+		num_blocks = fsize / (flash_block_size * 1024);
+		// Size of flash block in words. Flash word = 4B
+		flash_block_size_words = flash_block_size * 1024 / 4;
+                if (factory == true)
+		        dprintf("Programming Factory Partition");
+                else
+                        dprintf("Programming User Partition");
+                dprintf("(@ 0x%08X) with %ld Bytes from File: %s\n",
+				address, fsize, fpga_file[round]);
+		dprintf("  Program -> for Size: %d in blocks (%dK Words or %dK Bytes)\n\n",num_blocks,
+			flash_block_size/4 , flash_block_size);
+
+		dprintf("Reset Flash\n");
+		if (0 != flash_reset_wait(CFG, cntl_reg))
+			goto __exit;
+
+		//# -------------------------------------------------------------------------------
+		//# Erase Flash
+		//# -------------------------------------------------------------------------------
+		dprintf("Erasing Flash\n");
+		rc = flash_erase(CFG, addr_reg, size_reg, cntl_reg,
+				address, num_blocks);
+		eet = time(NULL);  /* End Erase Time */
+		spt = ept = svt = evt = eet;
+		if (0 != rc)
+			goto __exit;
+		/* Number of Write Words (each does have 4 Bytes)  */
+		flash_words = flash_block_size_words * (num_blocks + 1);
+
+		//# -------------------------------------------------------------------------------
+		//# Program Flash
+		//# -------------------------------------------------------------------------------
+		dprintf("\n\nProgramming Flash\n");
+
+		int bc = 0;
+		int i;
+		dprintf("Writing Block:\n");
+
+		//Need to add 64 for SPI device
+		//Otherwise stuck at waiting for FLASH_OP_DONE
+		for (i = 0; i < flash_words + (is_SPI ? 64: 0); i++) {
+			dif = read(FPGA_BIN, &dat, 4);
+			if (!(dif))
+				dat = 0xFFFFFFFF;	 /* Provide data for EOF */
+			rc = flash_write(CFG, cntl_reg, data_reg, dat);
+			ept = time(NULL);
+			svt = evt = ept;
+			if (0 != rc)
+				goto __exit;
+			if (((i+1) % (flash_block_size_words)) == 0) {
+				dprintf("\r %d",bc);
+				bc++;
+			}
+		}
+		printf("\n");
+
+		//# -------------------------------------------------------------------------------
+		//# Wait for Flash Program to complete.
+		//# -------------------------------------------------------------------------------
+		rc = flash_wait_op(CFG, cntl_reg, FLASH_OP_DONE, FLASH_OP_DONE, 120);
 		ept = time(NULL);
 		svt = evt = ept;
 		if (0 != rc)
 			goto __exit;
-		if (((i+1) % (flash_block_size_words)) == 0) {
-			dprintf(" %d",bc);
-			bc++;
-		}
-	}
-	printf("\n");
+		//# -------------------------------------------------------------------------------
+		//# Reset and wait
+		//# -------------------------------------------------------------------------------
+		rc =  flash_reset_wait(CFG, cntl_reg);
+		evt =  time(NULL);
+		if (0 != rc)
+			goto __exit;
+		dprintf("\n");
 
-	//# -------------------------------------------------------------------------------
-	//# Wait for Flash Program to complete.
-	//# -------------------------------------------------------------------------------
-	rc = flash_wait_op(CFG, cntl_reg, FLASH_OP_DONE, FLASH_OP_DONE, 120);
-	ept = time(NULL);
-	svt = evt = ept;
-	if (0 != rc)
-		goto __exit;
-	//# -------------------------------------------------------------------------------
-	//# Reset and wait
-	//# -------------------------------------------------------------------------------
-	rc =  flash_reset_wait(CFG, cntl_reg);
-	evt =  time(NULL);
-	if (0 != rc)
-		goto __exit;
-	dprintf("\n");
+		//# -------------------------------------------------------------------------------
+		//# Verify Flash Programmming
+		//# -------------------------------------------------------------------------------
+		dprintf("Verifying Flash\n");
 
-	//# -------------------------------------------------------------------------------
-	//# Verify Flash Programmming
-	//# -------------------------------------------------------------------------------
-	dprintf("Verifying Flash\n");
+		lseek(FPGA_BIN, 0, SEEK_SET);   // Reset to beginning of file
+		svt = time(NULL);		// Get Start Verify Time
+		bc = 0;
 
-	lseek(FPGA_BIN, 0, SEEK_SET);   // Reset to beginning of file
-	svt = time(NULL);               // Get Start Verify Time
-	bc = 0;
-	raddress = address;
-
-	dprintf("Reading Block:");
-	for( i = 0; i < flash_words; i++) {
-		evt = time(NULL);
-		dif = read(FPGA_BIN,&edat,4);
-		if (!(dif))
-			edat = 0xFFFFFFFF;
-		// At 512 word read size.
-		if ((i % 512) == 0) {
-			rc = flash_set_read_addr(CFG, addr_reg, size_reg, cntl_reg,
-					raddress, FLASH_READ_SIZE);
+		raddress = address;
+		ma = address;
+		dprintf("Reading Block:\n");
+		
+		if(is_SPI) {
+			//SPI needs to send a READ_REQ at the beginning.
 			if (0 != rc)
 				goto __exit;
-			raddress += FLASH_READ_SIZE;
-			cntl_remain = FLASH_READ_SIZE -1;
+			rc = write_config_word(CFG, cntl_reg, FLASH_READ_REQ);
 		}
 
-		cntl_remain = (cntl_remain - 1) & 0x3ff;
-		rc = flash_wait_ready(CFG, cntl_reg, cntl_remain);
-		if (0 != rc)
-			goto __exit;
-		// Read data from flash
-		rc = read_config_word(CFG, data_reg, &dat);
-		if (0 != rc)
-			goto __exit;
+		for( i = 0; i < flash_words; i++) {
+			evt = time(NULL);
+			dif = read(FPGA_BIN,&edat,4);
+			if (!(dif))
+				edat = 0xFFFFFFFF;
+			
+			//----------------------------------------
+			//The way to check Flash ready is different
+			if (is_SPI) {
+				//----------------------------------------
+				// For SPI
+				// Data is read out serially
+				rc = flash_wait_op(CFG, cntl_reg, FLASH_RDATA_VALID, FLASH_RDATA_VALID, 30);
+				raddress += 4;
+				if (0 != rc)
+					goto __exit;
+			} else {
+				// For BPIx16
+				// At 512 word read size.
+				if ((i % 512) == 0) {
+					rc = flash_set_read_addr(CFG, addr_reg, size_reg, cntl_reg,
+							raddress, FLASH_READ_SIZE);
+					if (0 != rc)
+						goto __exit;
+					raddress += FLASH_READ_SIZE;
+					cntl_remain = FLASH_READ_SIZE -1;
+				}
 
-		if ((edat != dat) && (print_cnt < 1024)) {
-			int ma = raddress + (i % 512) - 0x200;
-			eprintf("Data Miscompare @: %08x --> %08x expected %08x\n",ma, dat, edat);
-			print_cnt++;
-		}
+				cntl_remain = (cntl_remain - 1) & 0x3ff;
+				rc = flash_wait_ready(CFG, cntl_reg, cntl_remain);
+				if (0 != rc)
+					goto __exit;
+			}
 
-		if (((i+1) % (flash_block_size_words)) == 0) {
-			printf(" %d", bc);
-			bc++;
-		}
-	}
-	rc = 0;            /* Good */
+			
+			
+			// Read data from flash
+			rc = read_config_word(CFG, data_reg, &dat);
+			if (0 != rc)
+				goto __exit;
+
+			if ((edat != dat) && (print_cnt < 1024)) {
+				if (is_SPI) 
+				ma = raddress - 4; 
+				else
+				ma = raddress + (i % 512) - FLASH_READ_SIZE;
+				eprintf("Data Miscompare @: %08x --> %08x expected %08x\n",ma, dat, edat);
+				print_cnt++;
+			}
+
+			if (((i+1) % (flash_block_size_words)) == 0) {
+				dprintf("\r %d", bc);
+				bc++;
+			}
+		} //Verify done.
+
+		rc = 0;		   /* Good */
+		dprintf("\n");
+		evt = time(NULL);  /* Get End of verification time */
+		//# -------------------------------------------------------------------------------
+		//# Calculate and Print Elapsed Times
+		//# -------------------------------------------------------------------------------
+		dprintf("Erase Time:   %d seconds\n", (int)(eet - set));
+		dprintf("Program Time: %d seconds\n", (int)(ept - spt));
+		dprintf("Verify Time:  %d seconds\n", (int)(evt - svt));
+	} // End Loop
+
+	dprintf("------------------------------------------\n");
+	dprintf("Total Time:   %d seconds\n", (int)(evt - t0));
+
 
 __exit:
-	dprintf("\n");
-	evt = time(NULL);  /* Get End of Verifaction time */
-	//# -------------------------------------------------------------------------------
-	//# Calculate and Print Elapsed Times
-	//# -------------------------------------------------------------------------------
-	dprintf("Erase Time:   %d seconds\n", (int)(eet - set));
-	dprintf("Program Time: %d seconds\n", (int)(ept - spt));
-	dprintf("Verify Time:  %d seconds\n", (int)(evt - svt));
-	dprintf("Total Time:   %d seconds\n", (int)(evt - set));
 	dprintf("Flash RC: %d\n", rc);
+	dprintf("------------------------------------------\n");
 
 __exit0:
 	if (-1 != FPGA_BIN)
