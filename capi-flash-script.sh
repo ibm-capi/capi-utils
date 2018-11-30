@@ -203,7 +203,7 @@ elif [[ ${fpga_type[$c]} == "Xilinx" ]]; then
     exit 0
   fi
 else 
-  printf "${bold}ERROR: ${normal}Card not listed in psl-devices!\n"
+  printf "${bold}ERROR: ${normal}Card not listed in psl-devices or previous card failed or is not responding\n"
   exit 0
 fi
 
