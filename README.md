@@ -10,7 +10,9 @@ Uninstall: `sudo make uninstall`
 
 # capi-flash-script
 
-Usage: `sudo capi-flash-script <path-to-bin-file>`
+Usage: 
+Single file flash memory : `sudo capi-flash-script <path-to-bin-file>`
+SPI8 with 2 flash memory : `sudo capi-flash-script <path-to-primary-bin-file> <path-to-secondary-bin-file>`
 
 This script can be used to flash a specific card in a system with one or more CAPI cards installed.
 
