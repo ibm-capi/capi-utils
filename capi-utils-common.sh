@@ -60,7 +60,7 @@ function testcard
         ;;
       	2)
       	  [ $count -eq 0 ] && printf "." && count=$maxCount
-      	  [ -e $cxlafuFile ] && cxlDirStatus=3 && printf "\n$cxlafuFile recreated\n"
+      	  [ -e $cxlafuFile ] && cxlDirStatus=3 && printf "$cxlafuFile recreated\n"
         ;;
         3)
           break
@@ -118,9 +118,9 @@ function reset_card() {
 # Uncomment the 2 following lines should you want to give access to all users
 #	printf "Doing : sudo chmod -R ugo+rw /dev/cxl\n"
 #        sudo chmod -R ugo+rw /dev/cxl
-    printf "Newly /dev/cxl device will need sudo authorization"
-    printf "example: sudo snap_maint"
-    printf "If you don't want to bother with sudo command, you may do 'sudo chmod -R ugo+rw /dev/cxl'"
+    printf "\nNew /dev/cxl/* device will need sudo authorization\n"
+    printf "example: sudo snap_maint -v\n"
+    printf "Tune /dev/cxl/* privileges if needed\n"
     printf "Reset complete\n\n"
   fi
 }
