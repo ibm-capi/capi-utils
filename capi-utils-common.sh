@@ -37,15 +37,46 @@ function perst_factory() {
   rm -rf "/var/cxl/capi-flash-script.lock"
 }
 
+# Test if a card reset is done
+function testcard
+{
+  cardId=$1
+  cxlDir="/sys/class/cxl/card$cardId"
+  cxlafuFile="/dev/cxl/afu$cardId.0m"
+  cxlDirStatus=0  # 0->still here, 1->disapeared so reset is on going, 2-> first dir reappeared 3->back here so reset is done
+  
+  maxCount=50000
+  count=0
+  while true
+    do
+      case $cxlDirStatus in
+        0)
+          [ $count -eq 0 ] && printf "." && count=$maxCount
+          [ ! -d $cxlDir ] && cxlDirStatus=1 && printf "\n$cxlDir deleted\n"
+        ;;
+        1)
+          [ $count -eq 0 ] && printf "." && count=$maxCount
+          [ -d $cxlDir ] && cxlDirStatus=2 && printf "\n$cxlDir recreated\n"
+        ;;
+      	2)
+      	  [ $count -eq 0 ] && printf "." && count=$maxCount
+      	  [ -e $cxlafuFile ] && cxlDirStatus=3 && printf "\n$cxlafuFile recreated\n"
+        ;;
+        3)
+          break
+        ;;
+      esac
+      count=$((count-1))
+  done
+}
+
+export -f testcard  # function exportation in order to allow using it with timeout command below
+
 # Reset a card and control what image gets loaded
 function reset_card() {
-  # Set return status
-  ret_status=0
   # Timeout for reset
-  reset_timeout=30
-  reset_count=0
-  # get number of cards in system
-  n=`ls -d /sys/class/cxl/card* | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w`
+  reset_timeout=60
+
   # eeh_max_freezes: default number of resets allowed per PCI device per
   # hour. Backup/restore this counter, since if card is rest too often,
   # it would be fenced away.
@@ -56,36 +87,41 @@ function reset_card() {
 
   [ -n "$3" ] && printf "$3\n" || printf "Preparing to reset card\n"
   [ -n "$4" ] && reset_timeout=$4
-  sleep 5
+  # sleep 5  ## Why ?
   printf "Resetting card $1: "
   c=$1
   printf $2 > /sys/class/cxl/card$c/load_image_on_perst
   ic=`cat /sys/class/cxl/card$c/load_image_on_perst`
   printf "load_image_on_perst is set to \"$ic\". Reset!\n"
-  printf 1 > /sys/class/cxl/card$c/reset
-  sleep 5
-  while true; do
-    if [[ `ls -d /sys/class/cxl/card* 2> /dev/null | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w` == "$n" ]]; then
-      break
-    fi 
-    printf "."
-    sleep 1
-    reset_count=$((reset_count + 1))
-    if [[ $reset_count -eq $reset_timeout ]]; then
-      printf "${bold}ERROR:${normal} Reset timeout has occurred\n"
-      ret_status=1
-      break 
-    fi
-  done
+  
+  cxlDir="/sys/class/cxl/card$c"
+
+  printf 1 > $cxlDir/reset  # reset requested
+
+  if timeout $reset_timeout bash -c "testcard $c"
+  then
+    ret_status=0
+  else
+    ret_status=1
+  fi
+  
   printf "\n"
 
   if [ -f /sys/kernel/debug/powerpc/eeh_max_freezes ]; then
     echo $eeh_max_freezes > /sys/kernel/debug/powerpc/eeh_max_freezes
   fi
+
   if [ $ret_status -ne 0 ]; then
+    printf "${bold}ERROR:${normal} Reset timeout has occurred\n\n"
     exit 1
   else
-    printf "Reset complete\n"
+# Uncomment the 2 following lines should you want to give access to all users
+#	printf "Doing : sudo chmod -R ugo+rw /dev/cxl\n"
+#        sudo chmod -R ugo+rw /dev/cxl
+    printf "Newly /dev/cxl device will need sudo authorization"
+    printf "example: sudo snap_maint"
+    printf "If you don't want to bother with sudo command, you may do 'sudo chmod -R ugo+rw /dev/cxl'"
+    printf "Reset complete\n\n"
   fi
 }
 
