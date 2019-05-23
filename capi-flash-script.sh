@@ -299,7 +299,7 @@ wait $PID
 trap - TERM INT
 wait $PID
 RC=$?
-if [ $RC -eq 0 ]; then
-  # reset card only if Flashing was good
-  reset_card $c user
-fi
+#if [ $RC -eq 0 ]; then
+#  # reset card only if Flashing was good
+#  reset_card $c user
+#fi
