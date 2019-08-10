@@ -1,21 +1,21 @@
-0x0000 Nallatech Altera
-0x0001 Nallatech Altera
-0x1001 Convey Xilinx
-0x2001 AlphaData7v3 Xilinx        0x2000000 256
-0x2002 AlphaData7v3 Xilinx        0x2000000 256
-0x3001 AlphaDataKU60 Xilinx       0x2000000 256
-0x3003 AlphaDataKU60 Xilinx       0x2000000 256
-0x0604 AlphaData7v3 Xilinx        0x2000000 256
-0x0605 AlphaDataKU60 Xilinx       0x2000000 256
-0x0606 SemptianNSA121A Xilinx
-0x0607 SemptianNSA121B Xilinx     0x4000000 256
-0x0664 SemptianNSA121B Xilinx     0x8000000 64   SPIx4 
-0x0608 AlphaDataKU115 Xilinx      0x4000000 256
-0x0609 BittwareVU095 Xilinx
-0x060a NallatechKU60 Xilinx       0x2000000 256
-0x04dd NallatechN250SP Xilinx     0x4000000 256
-0x060d NallatechN250SP Xilinx     0x4000000 256
-0x060f AlphadataVU3P Xilinx       0x1000000 64  SPIx8 0x3000000
-0x0660 SemptianNSA241 Xilinx      0x8000000 64  SPIx4
-0x0661 FlysliceVU9P Xilinx        0x4000000 64  SPIx4
-0x0665 U200 Xilinx                0x1002000 64  SPIx4
+0x1014 0x0000 Nallatech Altera
+0x1014 0x0001 Nallatech Altera
+0x1014 0x1001 Convey Xilinx
+0x1014 0x2001 AlphaData7v3 Xilinx        0x2000000 256
+0x1014 0x2002 AlphaData7v3 Xilinx        0x2000000 256
+0x1014 0x3001 AlphaDataKU60 Xilinx       0x2000000 256
+0x1014 0x3003 AlphaDataKU60 Xilinx       0x2000000 256
+0x1014 0x0604 AlphaData7v3 Xilinx        0x2000000 256
+0x1014 0x0605 AlphaDataKU60 Xilinx       0x2000000 256
+0x1014 0x0606 SemptianNSA121A Xilinx
+0x1014 0x0607 SemptianNSA121B Xilinx     0x4000000 256
+0x1014 0x0664 SemptianNSA121B Xilinx     0x8000000 64   SPIx4 
+0x1014 0x0608 AlphaDataKU115 Xilinx      0x4000000 256
+0x1014 0x0609 BittwareVU095 Xilinx
+0x1014 0x060a NallatechKU60 Xilinx       0x2000000 256
+0x1014 0x04dd NallatechN250SP Xilinx     0x4000000 256
+0x1014 0x060d NallatechN250SP Xilinx     0x4000000 256
+0x1014 0x060f AlphadataVU3P Xilinx       0x1000000 64  SPIx8 0x3000000
+0x1014 0x0660 SemptianNSA241 Xilinx      0x8000000 64  SPIx4
+0x1014 0x0661 FlysliceVU9P Xilinx        0x4000000 64  SPIx4
+0x1014 0x0665 U200 Xilinx                0x1002000 64  SPIx4

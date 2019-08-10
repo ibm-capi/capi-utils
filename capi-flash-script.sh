@@ -140,21 +140,22 @@ printf "${bold}%-7s %-30s %-29s %-20s %s${normal}\n" "#" "Card" "Flashed" "by" "
 # print card information and flash history
 i=0;
 while read d; do
-  p[$i]=$(cat /sys/class/cxl/card$i/device/subsystem_device)
+  vv[$i]=$(cat /sys/class/cxl/card$i/device/subsystem_vendor)
+  dd[$i]=$(cat /sys/class/cxl/card$i/device/subsystem_device)
   # check for legacy device
-  if [[ ${p[$i]:0:6} == "0x04af" ]]; then
-    p[$i]=$(cat /sys/class/cxl/card$i/psl_revision | xargs printf "0x%.4X")
+  if [[ ${dd[$i]:0:6} == "0x04af" ]]; then
+    dd[$i]=$(cat /sys/class/cxl/card$i/psl_revision | xargs printf "0x%.4X")
   fi
   f=$(cat /var/cxl/card$i)
   while IFS='' read -r line || [[ -n $line ]]; do
-    if [[ ${line:0:6} == ${p[$i]:0:6} ]]; then
+    if [[ ${line:0:6} == ${vv[$i]:0:6} && ${line:7:6} == ${dd[$i]:0:6} ]]; then
       parse_info=($line)
-      board_vendor[$i]=${parse_info[1]}
-      fpga_type[$i]=${parse_info[2]}
-      flash_partition[$i]=${parse_info[3]}
-      flash_block[$i]=${parse_info[4]}
-      flash_interface[$i]=${parse_info[5]}
-      flash_secondary[$i]=${parse_info[6]}
+      board_vendor[$i]=${parse_info[2]}
+      fpga_type[$i]=${parse_info[3]}
+      flash_partition[$i]=${parse_info[4]}
+      flash_block[$i]=${parse_info[5]}
+      flash_interface[$i]=${parse_info[6]}
+      flash_secondary[$i]=${parse_info[7]}
       printf "%-7s %-30s %-29s %-20s %s\n" "card$i" "${line:6:25}" "${f:0:29}" "${f:30:20}" "${f:51}"
     fi
   done < "$package_root/psl-devices"
