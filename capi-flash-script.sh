@@ -156,7 +156,7 @@ while read d; do
       flash_block[$i]=${parse_info[5]}
       flash_interface[$i]=${parse_info[6]}
       flash_secondary[$i]=${parse_info[7]}
-      printf "%-7s %-30s %-29s %-20s %s\n" "card$i" "${line:6:25}" "${f:0:29}" "${f:30:20}" "${f:51}"
+      printf "%-7s %-30s %-29s %-20s %s\n" "card$i" "${line:14:25}" "${f:0:29}" "${f:30:20}" "${f:51}"
     fi
   done < "$package_root/psl-devices"
   i=$[$i+1]
