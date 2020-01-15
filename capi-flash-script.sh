@@ -138,8 +138,7 @@ printf "\n${bold}Current date:${normal}\n$(date)\n\n"
 printf "${bold}%-7s %-30s %-29s %-20s %s${normal}\n" "#" "Card" "Flashed" "by" "Last Image"
 
 # print card information and flash history
-i=0;
-while read d; do
+for i in `seq 0 $((n - 1))`; do
   p[$i]=$(cat /sys/class/cxl/card$i/device/subsystem_device)
   # check for legacy device
   if [[ ${p[$i]:0:6} == "0x04af" ]]; then
@@ -158,8 +157,7 @@ while read d; do
       printf "%-7s %-30s %-29s %-20s %s\n" "card$i" "${line:6:25}" "${f:0:29}" "${f:30:20}" "${f:51}"
     fi
   done < "$package_root/psl-devices"
-  i=$[$i+1]
-done < <(lspci -d "1014":"477" )
+done
 
 printf "\n"
 
