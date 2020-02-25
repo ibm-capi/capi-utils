@@ -16,6 +16,7 @@
 0x04dd Nallatech_N250SP Xilinx    0x4000000 256
 0x060d Nallatech_N250SP Xilinx    0x4000000 256
 0x060f Alphadata_AD9V3 Xilinx     0x1000000 64  SPIx8 0x3000000
+0x0667 Alphadata_AD9H3 Xilinx     0x1000000 64  SPIx8 0x3000000
 0x0660 SemptianNSA241 Xilinx      0x8000000 64  SPIx4
 0x0661 FlysliceVU9P Xilinx        0x4000000 64  SPIx4
 0x0665 U200 Xilinx                0x1002000 64  SPIx4
