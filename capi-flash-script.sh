@@ -208,6 +208,14 @@ fi
 # get flash address and block size
 if [ -z "$flash_address" ]; then
   flash_address=${flash_partition[$c]}
+  if [ $flash_address == "0x0000000" ]; then
+    printf "====================================================\n"
+    printf "${bold}== WARNING :${normal} YOU ARE PROGRAMMING IN FACTORY AREA! ==\n"
+    printf "====================================================\n"
+  else
+      printf "${bold}INFO :${normal} You are programming in USER area\n"
+  fi
+
 fi
 if [ -z "$flash_block_size" ]; then
   flash_block_size=${flash_block[$c]}
