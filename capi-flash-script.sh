@@ -110,15 +110,42 @@ if [ $capi_check -eq 0 ]; then
   exit 1
 fi
 
+LockDir=/var/cxl/capi-flash-script.lock
+
 # make cxl dir if not present
-mkdir -p /var/cxl/
+mkdir -p `dirname $LockDir`
 
 # mutual exclusion
-if ! mkdir /var/cxl/capi-flash-script.lock 2>/dev/null; then
-  printf "${bold}ERROR:${normal} Another instance of this script is running\n"
-  exit 1
+if ! mkdir $LockDir 2>/dev/null; then
+  echo
+  printf "${bold}ERROR:${normal} Existing LOCK => Another instance of this script is maybe running\n"
+
+  DateLastBoot=`who -b | awk '{print $3 " " $4}'`
+  EpochLastBoot=`date -d "$DateLastBoot" +%s`
+
+  EpochLockDir=`stat --format=%Y $LockDir`
+  DateLockDir=`date --date @$EpochLockDir`
+
+  echo
+  echo "Last BOOT:              `date --date @$EpochLastBoot` ($EpochLastBoot)"
+  echo "Last LOCK modification: $DateLockDir ($EpochLockDir)"
+
+  echo;echo "======================================================="
+  if [ $EpochLockDir -lt $EpochLastBoot ]; then
+     echo "$LockDir modified BEFORE last boot"
+     echo "LOCK is not supposed to still be here"
+     echo "  ==> Deleting and recreating $LockDir"
+     rmdir $LockDir
+     mkdir $LockDir
+  else
+     echo "$LockDir modified AFTER last boot"
+     printf "${bold}ERROR:${normal} Another instance of this script is running\n"
+     echo "Exiting..."
+     exit 1
+  fi
+
 fi
-trap 'rm -rf "/var/cxl/capi-flash-script.lock"' 0
+trap 'rm -rf "$LockDir"' EXIT
 
 # get number of cards in system
 n=`ls -d /sys/class/cxl/card* | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w`
