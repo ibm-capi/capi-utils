@@ -246,7 +246,7 @@ fi
 # get flash address and block size
 if [ -z "$flash_address" ]; then
   flash_address=${flash_partition[$c]}
-  if [ $flash_address == "0x0000000" ]; then
+  if [ $flash_address == "0x0000000" ] || [ $flash_address == "0x00000000" ]; then
     if [[ $1 =~ "oc_" ]]
     then
        printf "===================================================================================\n"
