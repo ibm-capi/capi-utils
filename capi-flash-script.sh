@@ -31,8 +31,6 @@ flash_block_size=""
 flash_type=""
 
 reset_factory=0
-
-
 # Print usage message helper function
 function usage() {
   echo "Usage:  sudo ${program} [OPTIONS]"
@@ -227,7 +225,7 @@ elif [[ ${fpga_type[$c]} == "Xilinx" ]]; then
     printf "${bold}ERROR: ${normal}Wrong file extension: .bin must be used for boards with Xilinx FPGA\n"
     exit 0
   fi
-else 
+else
   printf "${bold}ERROR: ${normal}Card not listed in psl-devices or previous card failed or is not responding\n"
   exit 0
 fi
@@ -236,11 +234,29 @@ fi
 if [ -z "$flash_address" ]; then
   flash_address=${flash_partition[$c]}
   if [ $flash_address == "0x0000000" ]; then
-    printf "====================================================\n"
-    printf "${bold}== WARNING :${normal} YOU ARE PROGRAMMING IN FACTORY AREA! ==\n"
-    printf "====================================================\n"
+    if [[ $1 =~ "oc_" ]]
+    then
+       printf "===================================================================================\n"
+       echo "NOTE : You are in the process of programming an OPENCAPI image in FACTORY area!"
+       echo "       A reboot or power cycle will be needed to re-enumerate the cards."
+       echo "       Don't forget to change programming address to USER afterwards ( /lib/capi-utils/psl-devices)"
+       printf "===================================================================================\n"
+    else
+       printf "========================================================================\n"
+       printf "${bold}== WARNING :${normal} YOU ARE IN THE PROCESS OF PROGRAMMING IN FACTORY AREA! \n"
+       printf "== If this is not intentional, change programming address in /lib/capi-utils/psl-devices\n"
+       printf "========================================================================\n"
+    fi
   else
-      printf "${bold}INFO :${normal} You are programming in USER area\n"
+      if [[ $1 =~ "oc_" ]]
+      then
+         printf "===================================================================================\n"
+         echo "WARNING: You are in the process of programming an OpenCAPI image in USER area!"
+         echo "         Change programming address in /lib/capi-utils/psl-devices if this is what you expect to do."
+         printf "===================================================================================\n"
+      else
+         printf "${bold}INFO :${normal} You are programming in USER area\n"
+      fi
   fi
 
 fi
@@ -257,7 +273,7 @@ fi
 # Deal with the second argument
 if [ $flash_type == "SPIx8" ]; then
     if [ $# -eq 1 ]; then
-      printf "${bold}ERROR:${normal} Input argument missing. The seleted device is SPIx8 and needs both primary and secondary bin files\n"
+      printf "${bold}ERROR:${normal} Input argument missing. The selected device is SPIx8 and needs both primary and secondary bin files\n"
       usage
       exit 1
     fi
@@ -280,11 +296,11 @@ fi
 if (($force != 1)); then
   # prompt to confirm
   while true; do
-    printf "Will flash ${bold}card$c${normal} with ${bold}$1${normal}" 
+    printf "Will flash ${bold}card$c${normal} with: \n\t${bold}$1${normal}"
     if [ $flash_type == "SPIx8" ]; then
-        printf "and ${bold}$2${normal}" 
+        printf "\nand \t${bold}$2${normal}\n"
     fi
-    read -p ". Do you want to continue? [y/n] " yn
+    read -p "Do you want to continue? [y/n] " yn
     case $yn in
       [Yy]* ) break;;
       [Nn]* ) exit;;
@@ -294,7 +310,7 @@ if (($force != 1)); then
 else
   printf "Continue to flash ${bold}$1${normal} ";
   if [ $flash_type == "SPIx8" ]; then
-    printf "and ${bold}$2${normal} " 
+    printf "and ${bold}$2${normal} "
   fi
   printf "to ${bold}card$c${normal}\n"
 fi
@@ -313,7 +329,7 @@ if [ ! -x $package_root/capi-flash ]; then
   exit 1
 fi
 
-# Reset to card/flash registers to known state (factory) 
+# Reset to card/flash registers to known state (factory)
 if [ "$reset_factory" -eq 1 ]; then
   reset_card $c factory "Preparing card for flashing"
 fi
