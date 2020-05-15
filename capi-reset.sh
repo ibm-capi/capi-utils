@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+isnumber='^[0-9]+$'
 
 # get capi-utils root
 [ -h $0 ] && package_root=`ls -l "$0" |sed -e 's|.*-> ||'` || package_root="$0"
@@ -33,28 +34,33 @@ function confirm {
 }
 
 if [ -n "$1" ]; then
- 	# get number of cards in system
-	n=`ls -d /sys/class/cxl/card* | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w`
-	card=$((10#$1))
-	if (($card < 0 )) || (( "$card" > "$n" )); then
-    		printf "${bold}ERROR:${normal} Wrong card number ${card}\n"
-    		exit 1
-  	fi
+        # get number of cards in system
+        n=`ls -d /sys/class/cxl/card* | awk -F"/sys/class/cxl/card" '{ print $2 }' | wc -w`
+        if ! [[ $1 =~ $isnumber ]] ; then
+          echo "error: 1rst argument is not a number. usage: capi-reset 0 user" >&2; exit 1
+        fi
+        card=$((10#$1))
+        if (($card < 0 )) || (( "$card" > "$n-1" )); then
+                printf "${bold}ERROR:${normal} Wrong card number ${card}\n"
+                exit 1
+        fi
         if [ -n "$2" ]; then
             region=$2;
             if [[ "$region" != "factory" && "$region" != "user" ]]; then
-    		    printf "${bold}ERROR:${normal} Only supports \"factory\" or \"user\".\n"
-    		    exit 1
-  	        fi
+                    printf "${bold}ERROR:${normal} Only supports \"factory\" or \"user\".\n"
+                    exit 1
+                fi
             reset_card $card $region "Resetting CAPI Adapter $card"
         else
             reset_card $card factory "Resetting CAPI Adapter $card"
+            #printf "Bad argument\n"
+           # exit 1
         fi
 else
         confirm
-	#Find all the CAPI cards in the system
-	cardnums=`ls -d /sys/class/cxl/card* | awk -F"/sys/class/cxl/card" '{ print $2 }'`
-	for i in $cardnums; do
-		reset_card $i factory "Resetting CAPI Adapter $i"
-	done
+        #Find all the CAPI cards in the system
+        cardnums=`ls -d /sys/class/cxl/card* | awk -F"/sys/class/cxl/card" '{ print $2 }'`
+        for i in $cardnums; do
+                reset_card $i factory "Resetting CAPI Adapter $i"
+        done
 fi
