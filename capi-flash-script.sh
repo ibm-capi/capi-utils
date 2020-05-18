@@ -363,5 +363,14 @@ wait $PID
 RC=$?
 if [ $RC -eq 0 ]; then
   # reset card only if Flashing was good
-  reset_card $c user
+  if [[ $1 =~ "oc_" ]]
+  then
+    # reset card only if Flashing was good
+    # reset to factory if programming an oc image
+    echo "Resetting card to factory area"
+    reset_card $c factory
+  else
+    # reset card only if Flashing was good
+    reset_card $c user
+  fi
 fi
