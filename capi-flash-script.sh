@@ -252,20 +252,34 @@ if [ -z "$flash_address" ]; then
        printf "===================================================================================\n"
        echo "NOTE : You are in the process of programming an OPENCAPI image in FACTORY area!"
        echo "       A reboot or power cycle will be needed to re-enumerate the cards."
-       echo "       Don't forget to change programming address to USER afterwards ( /lib/capi-utils/psl-devices)"
+       echo "       Don't forget to sudo hange programming address to USER afterwards ( /lib/capi-utils/psl-devices)"
+
        printf "===================================================================================\n"
     else
        printf "========================================================================\n"
        printf "${bold}== WARNING :${normal} YOU ARE IN THE PROCESS OF PROGRAMMING IN FACTORY AREA! \n"
-       printf "== If this is not intentional, change programming address in /lib/capi-utils/psl-devices\n"
+       printf "== If this is not intentional, sudo change programming address in /lib/capi-utils/psl-devices\n"
+       
        printf "========================================================================\n"
     fi
   else
       if [[ $1 =~ "oc_" ]]
       then
          printf "===================================================================================\n"
-         echo "WARNING: You are in the process of programming an OpenCAPI image in USER area!"
-         echo "         Change programming address in /lib/capi-utils/psl-devices if this is what you expect to do."
+         printf "WARNING: You are in the process of programming an OpenCAPI image in USER area!
+       Sudo change programming address in /lib/capi-utils/psl-devices if this is what you expect to do.
+       In order to achieve this, please change default CAPI2 User area to Factory area, 
+1) if card uses a single flash memory, just set single address to 0x00000000
+2) If card uses 2 SPI flash memories, you need to change primary address to 0x00000000
+       while keeping the secondary flash selection bit active.
+   2a) For AD9H7 cards and further coming cards using large memory range, 
+       secondary selection bit is the Most significant bit of the 32bit address.
+       eg : 0x0668 Alphadata_AD9H7 Xilinx     0x04000000 64  SPIx8 0x84000000 # DEFAULT USER AREA
+            0x0668 Alphadata_AD9H7 Xilinx     0x00000000 64  SPIx8 0x80000000 # FACTORY AREA
+   2b) for other SPI8 cards the secondary selection bit is the Most significant
+       bit of the secondary address.
+       eg : 0x060f Alphadata_AD9V3 Xilinx     0x01000000 64  SPIx8 0x03000000 # DEFAULT USER AREA
+            0x060f Alphadata_AD9V3 Xilinx     0x00000000 64  SPIx8 0x02000000 # FACTORY AREA\n"
          printf "===================================================================================\n"
       else
          printf "${bold}INFO :${normal} You are programming in USER area\n"
