@@ -16,10 +16,23 @@
 #
 # Usage: sudo capi-flash-script.sh <path-to-bin-file>
 
+tool_version=2.1
+# Changes History
+# V2.0 code cleaning
+# V2.1 add this header and tests oc_ or fw_ file names
+
 # get capi-utils root
 [ -h $0 ] && package_root=`ls -l "$0" |sed -e 's|.*-> ||'` || package_root="$0"
 package_root=$(dirname $package_root)
 source $package_root/capi-utils-common.sh
+
+printf "\n"
+printf "==================================\n"
+printf "== CAPI1.0/2.0 programming tool ==\n"
+printf "==================================\n"
+echo capi-flash_script version is $tool_version
+printf "Tool compiled on: "
+ls -l $package_root/capi-flash|cut -d ' ' -f '6-8'
 
 force=0
 program=`basename "$0"`
@@ -31,8 +44,6 @@ flash_block_size=""
 flash_type=""
 
 reset_factory=0
-
-
 # Print usage message helper function
 function usage() {
   echo "Usage:  sudo ${program} [OPTIONS]"
@@ -227,7 +238,7 @@ elif [[ ${fpga_type[$c]} == "Xilinx" ]]; then
     printf "${bold}ERROR: ${normal}Wrong file extension: .bin must be used for boards with Xilinx FPGA\n"
     exit 0
   fi
-else 
+else
   printf "${bold}ERROR: ${normal}Card not listed in psl-devices or previous card failed or is not responding\n"
   exit 0
 fi
@@ -235,12 +246,44 @@ fi
 # get flash address and block size
 if [ -z "$flash_address" ]; then
   flash_address=${flash_partition[$c]}
-  if [ $flash_address == "0x0000000" ]; then
-    printf "====================================================\n"
-    printf "${bold}== WARNING :${normal} YOU ARE PROGRAMMING IN FACTORY AREA! ==\n"
-    printf "====================================================\n"
+  if [ $flash_address == "0x0000000" ] || [ $flash_address == "0x00000000" ]; then
+    if [[ $1 =~ "oc_" ]]
+    then
+       printf "===================================================================================\n"
+       echo "NOTE : You are in the process of programming an OPENCAPI image in FACTORY area!"
+       echo "       A reboot or power cycle will be needed to re-enumerate the cards."
+       echo "       Don't forget to sudo hange programming address to USER afterwards ( /lib/capi-utils/psl-devices)"
+
+       printf "===================================================================================\n"
+    else
+       printf "========================================================================\n"
+       printf "${bold}== WARNING :${normal} YOU ARE IN THE PROCESS OF PROGRAMMING IN FACTORY AREA! \n"
+       printf "== If this is not intentional, sudo change programming address in /lib/capi-utils/psl-devices\n"
+       
+       printf "========================================================================\n"
+    fi
   else
-      printf "${bold}INFO :${normal} You are programming in USER area\n"
+      if [[ $1 =~ "oc_" ]]
+      then
+         printf "===================================================================================\n"
+         printf "WARNING: You are in the process of programming an OpenCAPI image in USER area!
+       Sudo change programming address in /lib/capi-utils/psl-devices if this is what you expect to do.
+       In order to achieve this, please change default CAPI2 User area to Factory area, 
+1) if card uses a single flash memory, just set single address to 0x00000000
+2) If card uses 2 SPI flash memories, you need to change primary address to 0x00000000
+       while keeping the secondary flash selection bit active.
+   2a) For AD9H7 cards and further coming cards using large memory range, 
+       secondary selection bit is the Most significant bit of the 32bit address.
+       eg : 0x0668 Alphadata_AD9H7 Xilinx     0x04000000 64  SPIx8 0x84000000 # DEFAULT USER AREA
+            0x0668 Alphadata_AD9H7 Xilinx     0x00000000 64  SPIx8 0x80000000 # FACTORY AREA
+   2b) for other SPI8 cards the secondary selection bit is the Most significant
+       bit of the secondary address.
+       eg : 0x060f Alphadata_AD9V3 Xilinx     0x01000000 64  SPIx8 0x03000000 # DEFAULT USER AREA
+            0x060f Alphadata_AD9V3 Xilinx     0x00000000 64  SPIx8 0x02000000 # FACTORY AREA\n"
+         printf "===================================================================================\n"
+      else
+         printf "${bold}INFO :${normal} You are programming in USER area\n"
+      fi
   fi
 
 fi
@@ -257,7 +300,7 @@ fi
 # Deal with the second argument
 if [ $flash_type == "SPIx8" ]; then
     if [ $# -eq 1 ]; then
-      printf "${bold}ERROR:${normal} Input argument missing. The seleted device is SPIx8 and needs both primary and secondary bin files\n"
+      printf "${bold}ERROR:${normal} Input argument missing. The selected device is SPIx8 and needs both primary and secondary bin files\n"
       usage
       exit 1
     fi
@@ -280,11 +323,11 @@ fi
 if (($force != 1)); then
   # prompt to confirm
   while true; do
-    printf "Will flash ${bold}card$c${normal} with ${bold}$1${normal}" 
+    printf "Will flash ${bold}card$c${normal} with: \n\t${bold}$1${normal}"
     if [ $flash_type == "SPIx8" ]; then
-        printf "and ${bold}$2${normal}" 
+        printf "\nand \t${bold}$2${normal}\n"
     fi
-    read -p ". Do you want to continue? [y/n] " yn
+    read -p "Do you want to continue? [y/n] " yn
     case $yn in
       [Yy]* ) break;;
       [Nn]* ) exit;;
@@ -294,7 +337,7 @@ if (($force != 1)); then
 else
   printf "Continue to flash ${bold}$1${normal} ";
   if [ $flash_type == "SPIx8" ]; then
-    printf "and ${bold}$2${normal} " 
+    printf "and ${bold}$2${normal} "
   fi
   printf "to ${bold}card$c${normal}\n"
 fi
@@ -313,7 +356,7 @@ if [ ! -x $package_root/capi-flash ]; then
   exit 1
 fi
 
-# Reset to card/flash registers to known state (factory) 
+# Reset to card/flash registers to known state (factory)
 if [ "$reset_factory" -eq 1 ]; then
   reset_card $c factory "Preparing card for flashing"
 fi
@@ -334,5 +377,14 @@ wait $PID
 RC=$?
 if [ $RC -eq 0 ]; then
   # reset card only if Flashing was good
-  reset_card $c user
+  if [[ $1 =~ "oc_" ]]
+  then
+    # reset card only if Flashing was good
+    # reset to factory if programming an oc image
+    echo "Resetting card to factory area"
+    reset_card $c factory
+  else
+    # reset card only if Flashing was good
+    reset_card $c user
+  fi
 fi
